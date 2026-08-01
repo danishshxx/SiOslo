@@ -1,7 +1,5 @@
 import uuid
-from xml.dom.minidom import Text
-from xmlrpc.client import DateTime
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -15,10 +13,10 @@ class SalesReport(Base):
     total_rows = Column(Integer, default=0)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Relasi
+    # Relasi ke SalesItem
     items = relationship("SalesItem", back_populates="report", cascade="all, delete-orphan")
     analyses = relationship("Analysis", back_populates="report")
-    
+
 class SalesItem(Base):
     __tablename__ = "sales_items"
 
@@ -29,5 +27,4 @@ class SalesItem(Base):
     qty_sold = Column(Integer, default=0)
     remaining_stock = Column(Integer, default=0)
 
-    # Relasi
     report = relationship("SalesReport", back_populates="items")
