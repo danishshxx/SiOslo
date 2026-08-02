@@ -10,7 +10,7 @@ engine = create_engine(
     echo=settings.DEBUG
 )
 
-session_local = sessionmaker(
+SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
@@ -19,7 +19,7 @@ session_local = sessionmaker(
 Base = declarative_base()
 
 def get_db():
-    db = session_local()
+    db = SessionLocal()
     try:
         yield db
     finally:
