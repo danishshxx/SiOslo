@@ -1,3 +1,3 @@
 from .sales import SalesReport, SalesItem
-from .market import MarketTrend
-from .analysis import Analysis, Innovation, Simulation, MentorMessage, analysis_trend_refs
+from .market import MarketTrend, Demographic, FootTraffic, CompetitorPrice
+from .analysis import Analysis, Innovation, Simulation, MentorMessage

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from app.schemas.insight import InsightRequest, InsightResponse
-from app.services.llm_service import llm_service
+from app.services.llm_service import generate_market_insight   # import fungsi, bukan instance
 
 router = APIRouter(prefix="/insight", tags=["AI Insight"])
 
@@ -11,7 +11,7 @@ def generate_ai_insight(payload: InsightRequest):
     menggunakan Llama-3 (llm_service) untuk menghasilkan analisis dan strategi bisnis.
     """
     try:
-        result = llm_service.generate_market_insight(
+        result = generate_market_insight(
             sales_summary=payload.sales_summary,
             market_summary=payload.market_summary
         )

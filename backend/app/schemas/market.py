@@ -1,12 +1,9 @@
-from __future__ import annotations
 import datetime as dt
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
-# ==========================================
-# Schemas untuk MarketTrend
-# ==========================================
+# -------------------- MarketTrend --------------------
 class MarketTrendBase(BaseModel):
     keyword: str
     volume: int = 0
@@ -18,12 +15,10 @@ class MarketTrendCreate(MarketTrendBase):
 
 class MarketTrendResponse(MarketTrendBase):
     id: UUID
-    
     model_config = ConfigDict(from_attributes=True)
 
-# ==========================================
-# Schemas untuk Demographic
-# ==========================================
+
+# -------------------- Demographic --------------------
 class DemographicBase(BaseModel):
     location_area: str
     population_density: int
@@ -36,12 +31,10 @@ class DemographicCreate(DemographicBase):
 class DemographicResponse(DemographicBase):
     id: UUID
     created_at: dt.datetime
-    
     model_config = ConfigDict(from_attributes=True)
 
-# ==========================================
-# Schemas untuk FootTraffic
-# ==========================================
+
+# -------------------- FootTraffic --------------------
 class FootTrafficBase(BaseModel):
     location_area: str
     time_period: str
@@ -53,12 +46,10 @@ class FootTrafficCreate(FootTrafficBase):
 class FootTrafficResponse(FootTrafficBase):
     id: UUID
     created_at: dt.datetime
-    
     model_config = ConfigDict(from_attributes=True)
 
-# ==========================================
-# Schemas untuk CompetitorPrice
-# ==========================================
+
+# -------------------- CompetitorPrice --------------------
 class CompetitorPriceBase(BaseModel):
     competitor_name: str
     product_category: str
@@ -70,5 +61,4 @@ class CompetitorPriceCreate(CompetitorPriceBase):
 class CompetitorPriceResponse(CompetitorPriceBase):
     id: UUID
     created_at: dt.datetime
-    
     model_config = ConfigDict(from_attributes=True)

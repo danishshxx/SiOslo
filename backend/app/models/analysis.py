@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.core.database import Base
 
-# Tabel Pivot (Many-to-Many) antara Analyses dan MarketTrends
+# Tabel pivot Many-to-Many antara Analysis dan MarketTrend
 analysis_trend_refs = Table(
     "analysis_trend_refs",
     Base.metadata,
@@ -36,7 +36,7 @@ class Innovation(Base):
     analysis_id = Column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False)
     innovation_name = Column(Text, nullable=False)
     probability_score = Column(Float)
-    data_correlation = Column(Text)
+    data_correlation = Column(Text)   # bisa diubah ke JSONB kalau mau
     pricing_strategy = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -63,7 +63,7 @@ class MentorMessage(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     analysis_id = Column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False)
-    role = Column(Text, nullable=False) # 'user', 'assistant', 'system'
+    role = Column(Text, nullable=False)  # 'user', 'assistant', 'system'
     message = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

@@ -7,15 +7,16 @@ from app.core.database import Base
 
 class SalesReport(Base):
     __tablename__ = "sales_reports"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     filename = Column(Text, nullable=False)
     total_rows = Column(Integer, default=0)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relasi ke SalesItem
+
+    # Relasi
     items = relationship("SalesItem", back_populates="report", cascade="all, delete-orphan")
     analyses = relationship("Analysis", back_populates="report")
+
 
 class SalesItem(Base):
     __tablename__ = "sales_items"

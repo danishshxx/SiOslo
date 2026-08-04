@@ -1,21 +1,63 @@
 import os
 import json
-from typing import Dict, Any, Optional
+import requests
+from typing import Dict, Any, Optional, List
+from app.schemas.insight import InsightResponse
+from app.core.config import settings
+import pandas as pd
+from app.schemas.analysis import InnovationBlueprintItem
 
-# Kamu bisa menginstal library `groq` atau `together` atau menggunakan SDK pilihanmu
-# Pip install contoh: pip install groq
+# ------------------------------------------------------------------
+# Fungsi yang langsung dipanggil oleh endpoint insight
+# ------------------------------------------------------------------
+def generate_market_insight(
+    sales_summary: Dict[str, Any],
+    market_summary: Dict[str, Any]
+) -> InsightResponse:
+    """
+    Memanggil LLM lokal (Ollama) untuk menghasilkan insight dari ringkasan data.
+    Jika LLM tidak tersedia, mengembalikan mock response.
+    """
+    service = LLMService()
+    return service._generate(sales_summary, market_summary)
 
+
+# ------------------------------------------------------------------
+# Kelas utama LLM Service (dapat digunakan juga oleh endpoint lain)
+# ------------------------------------------------------------------
 class LLMService:
-    def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("LLM_API_KEY")
-        # Inisialisasi client API di sini (misal: Groq, Together, HuggingFace, dll)
-        # self.client = Groq(api_key=self.api_key)
+    def __init__(self):
+        self.llm_endpoint = settings.LLM_ENDPOINT  # e.g. http://localhost:11434/api/generate
+        self.model_name = settings.LLM_MODEL_NAME       # e.g. llama3:8b
 
-    def generate_market_insight(self, sales_summary: Dict[str, Any], market_summary: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Menerima summary data sales dan market, lalu mengembalikan 
-        insight bisnis & rekomendasi aksi berformat JSON dari Llama-3.
-        """
+    def _call_ollama(self, system_prompt: str, user_prompt: str) -> dict:
+        """Panggil Ollama API, kembalikan dict hasil parsing JSON."""
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+        try:
+            resp = requests.post(
+                self.llm_endpoint,
+                json={
+                    "model": self.model_name,
+                    "prompt": full_prompt,
+                    "stream": False,
+                    "format": "json"   # minta output JSON langsung
+                },
+                timeout=60
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            # Ollama menyimpan output di field "response"
+            llm_output = data.get("response", "{}")
+            return json.loads(llm_output)
+        except Exception:
+            # Jika LLM tidak tersedia, lempar exception atau kembalikan mock
+            raise RuntimeError("LLM service tidak dapat dihubungi")
+
+    def _generate(
+        self,
+        sales_summary: Dict[str, Any],
+        market_summary: Dict[str, Any]
+    ) -> InsightResponse:
         system_prompt = (
             "Kamu adalah AI Business Advisor senior untuk UMKM dan F&B/Retail (SiOslo). "
             "Tugasmu adalah menganalisis data penjualan dan kondisi pasar, lalu memberikan "
@@ -24,7 +66,7 @@ class LLMService:
 
         user_content = f"""
         Berikut adalah data ringkasan bisnis:
-        
+
         --- Sales Summary ---
         {json.dumps(sales_summary, indent=2)}
 
@@ -35,31 +77,47 @@ class LLMService:
         - "summary_analysis": string
         - "key_recommendations": list of strings
         - "risk_warning": string
+
+        HANYA kembalikan JSON, tanpa teks lain.
         """
 
-        # TODO: Hubungkan ke endpoint API Llama-3 milikmu
-        # Contoh panggilan mock / fallback jika API Key belum terpasang:
-        if not self.api_key:
-            return {
-                "summary_analysis": "Pasar menunjukkan tren positif pada jam makan siang, namun kompetitor menawarkan harga lebih kompetitif.",
-                "key_recommendations": [
+        # Coba panggil Ollama, jika gagal fallback ke mock
+        try:
+            result = self._call_ollama(system_prompt, user_content)
+            # Validasi dan kembalikan sebagai InsightResponse
+            return InsightResponse(**result)
+        except Exception:
+            # Fallback mock untuk development
+            return InsightResponse(
+                summary_analysis="Pasar menunjukkan tren positif pada jam makan siang, namun kompetitor menawarkan harga lebih kompetitif.",
+                key_recommendations=[
                     "Buat paket bundling produk terlaris di jam makan siang.",
                     "Penyesuaian margin harga 5% untuk bersaing dengan kompetitor sekitar.",
                     "Tingkatkan promosi di segmen demografi dominan."
                 ],
-                "risk_warning": "Stok bahan baku berpotensi habis jika tidak diproyeksikan dengan ketat."
-            }
-
-        # Contoh panggil API sungguhan:
-        # response = self.client.chat.completions.create(
-        #     model="llama3-8b-8192", # Atau model Llama-3 pilihanmu
-        #     messages=[
-        #         {"role": "system", "content": system_prompt},
-        #         {"role": "user", "content": user_content}
-        #     ],
-        #     response_format={"type": "json_object"}
-        # )
-        # return json.loads(response.choices[0].message.content)
-
-# Global Instance
-llm_service = LLMService()
+                risk_warning="Stok bahan baku berpotensi habis jika tidak diproyeksikan dengan ketat."
+            )
+    
+def generate_innovation_blueprint(
+    cleaned_data: pd.DataFrame,
+    data_health: Dict,
+    correlation_metrics: Dict,
+    target_lokasi: str
+) -> List[InnovationBlueprintItem]:
+    """
+    Placeholder untuk LLM – menghasilkan blueprint inovasi.
+    Nanti akan membangun prompt dan memanggil Ollama.
+    """
+    # Dummy response
+    return [
+        InnovationBlueprintItem(
+            id="inv-001",
+            title="Paket Hemat Makan Siang",
+            target_location=target_lokasi,
+            recommended_price=20000,
+            competitor_price_ceiling=25000,
+            justification="Berdasarkan foot traffic tinggi di jam makan siang dan harga kompetitor.",
+            risk_factors=["Fluktuasi harga bahan"],
+            whatsapp_copy_text="Yuk coba Paket Hemat Makan Siang kami! 🍱"
+        )
+    ]
