@@ -509,3 +509,36 @@ if __name__ == "__main__":
     if result["status"] == "success":
         print("\n=== cleaned_data (DataFrame setelah dibersihkan) ===")
         print(result["cleaned_data"])
+        
+# =================================================================
+# 8. ADAPTER UNTUK ENDPOINT /sales/upload
+# =================================================================
+
+from typing import Dict, Any
+import pandas as pd
+
+def parse_sales_csv(content: bytes, filename: str) -> Dict[str, Any]:
+    """
+    Adapter untuk endpoint POST /api/v1/sales/upload.
+    Menggunakan parse_and_validate() milik Jay, lalu mengonversi
+    DataFrame ke list of dict.
+    """
+    result = parse_and_validate(content)
+
+    if result["status"] == "error":
+        raise ValueError(result["data_health"]["warning_message"])
+
+    df = result["cleaned_data"]
+    items = []
+    for _, row in df.iterrows():
+        items.append({
+            "product_name": row.get("product_name", "Unknown"),
+            "category": row.get("category", "Uncategorized"),
+            "qty_sold": int(row.get("qty_sold", 0)),
+            "remaining_stock": int(row.get("remaining_stock", 0))
+        })
+    return {
+        "filename": filename,
+        "total_rows": len(items),
+        "items": items
+    }
