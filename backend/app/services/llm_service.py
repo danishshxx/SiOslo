@@ -1,10 +1,10 @@
 import json
-import requests
+import httpx
 import pandas as pd
 from typing import Dict, List, Any
 from app.schemas.analysis import InnovationBlueprintItem
-from app.core.config import settings
 from app.schemas.insight import InsightResponse
+from app.core.config import settings
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -19,7 +19,7 @@ def generate_innovation_blueprint(
 ) -> List[InnovationBlueprintItem]:
     """
     Membangun prompt dari data kesehatan & korelasi, memanggil LLM
-    (Ollama lokal), dan mengembalikan blueprint inovasi.
+    (Ollama lokal via httpx sinkron), dan mengembalikan blueprint inovasi.
     Jika LLM tidak tersedia → fallback ke simulasi cerdas.
     """
     # 1. Bangun prompt
@@ -83,61 +83,62 @@ def _build_prompt(
 
     # Gabungkan prompt
     return f"""
-Kamu adalah AI Business Advisor senior untuk UMKM. Berikan rekomendasi inovasi produk berdasarkan data penjualan dan pasar berikut.
+        Kamu adalah AI Business Advisor senior untuk UMKM. Berikan rekomendasi inovasi produk berdasarkan data penjualan dan pasar berikut.
 
-### KESEHATAN DATA
-Skor Keandalan: {reliability}/100 (status: {status})
-Catatan: {warnings}
+        ### KESEHATAN DATA
+        Skor Keandalan: {reliability}/100 (status: {status})
+        Catatan: {warnings}
 
-### PRODUK (dari CSV)
-{chr(10).join(product_list) if product_list else 'Tidak ada produk'}
+        ### PRODUK (dari CSV)
+        {chr(10).join(product_list) if product_list else 'Tidak ada produk'}
 
-### KORELASI PASAR (target: {target})
-{corr_text}
+        ### KORELASI PASAR (target: {target})
+        {corr_text}
 
-### INSTRUKSI
-Berdasarkan data di atas, berikan 2-3 ide inovasi produk (Hyper-Local atau Dead-Stock Resurrection) untuk target lokasi {target}.
-Output HARUS dalam format JSON array dengan struktur:
-[
-  {{
-    "id": "inv-001",
-    "title": "Judul Inovasi",
-    "target_location": "{target}",
-    "recommended_price": 25000,
-    "competitor_price_ceiling": 30000,
-    "justification": "Alasan berdasarkan data",
-    "risk_factors": ["risiko 1", "risiko 2"],
-    "whatsapp_copy_text": "Teks promosi siap salin untuk WA Business"
-  }}
-]
-HANYA kembalikan JSON array, tanpa teks tambahan.
-"""
+        ### INSTRUKSI
+        Berdasarkan data di atas, berikan 2-3 ide inovasi produk (Hyper-Local atau Dead-Stock Resurrection) untuk target lokasi {target}.
+        Output HARUS dalam format JSON array dengan struktur:
+        [
+        {{
+            "id": "inv-001",
+            "title": "Judul Inovasi",
+            "target_location": "{target}",
+            "recommended_price": 25000,
+            "competitor_price_ceiling": 30000,
+            "justification": "Alasan berdasarkan data",
+            "risk_factors": ["risiko 1", "risiko 2"],
+            "whatsapp_copy_text": "Teks promosi siap salin untuk WA Business"
+        }}
+        ]
+        HANYA kembalikan JSON array, tanpa teks tambahan.
+        """
 
 
 # ═══════════════════════════════════════════════════════════════════
-# PANGGILAN OLLAMA
+# PANGGILAN OLLAMA (via httpx sinkron)
 # ═══════════════════════════════════════════════════════════════════
 
 def _call_ollama(prompt: str) -> dict:
-    """Mengirim prompt ke Ollama API, mengembalikan dict hasil parsing JSON."""
-    resp = requests.post(
-        settings.LLM_ENDPOINT,
-        json={
-            "model": settings.LLM_MODEL_NAME,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json"
-        },
-        timeout=90
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    llm_output = data.get("response", "[]")
-    # Bersihkan jika ada teks di luar JSON
-    llm_output = llm_output.strip()
-    if llm_output.startswith("```"):
-        llm_output = llm_output.split("\n", 1)[-1].rsplit("\n", 1)[0]
-    return json.loads(llm_output)
+    """Mengirim prompt ke Ollama API secara sinkron dengan httpx."""
+    with httpx.Client(timeout=90.0) as client:
+        resp = client.post(
+            settings.LLM_ENDPOINT,
+            json={
+                "model": settings.LLM_MODEL_NAME,
+                "prompt": prompt,
+                "stream": False,
+                "format": "json"
+            }
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        llm_output = data.get("response", "[]").strip()
+
+        # Bersihkan jika ada markdown code fence
+        if llm_output.startswith("```"):
+            llm_output = llm_output.split("\n", 1)[-1].rsplit("\n", 1)[0]
+
+        return json.loads(llm_output)
 
 
 def _parse_llm_response(llm_json: Any, target: str) -> List[InnovationBlueprintItem]:
@@ -191,7 +192,7 @@ def _simulate_blueprint(
             id=id_str,
             title=f"Inovasi {name} untuk {target}",
             target_location=target,
-            recommended_price=int(price * 0.9),  # sedikit di bawah kompetitor
+            recommended_price=int(price * 0.9),
             competitor_price_ceiling=int(comp_price),
             justification=justification,
             risk_factors=["Respons pasar perlu diuji", "Ketersediaan bahan baku"],
@@ -215,6 +216,7 @@ def _simulate_blueprint(
 
     return items
 
+
 # ═══════════════════════════════════════════════════════════════════
 # FUNGSI UNTUK ENDPOINT /insight/generate
 # ═══════════════════════════════════════════════════════════════════
@@ -227,13 +229,10 @@ def generate_market_insight(
     Menghasilkan analisis dan rekomendasi bisnis dari ringkasan data
     (tanpa perlu upload CSV). Dipanggil oleh endpoint /insight/generate.
     """
-    from app.schemas.insight import InsightResponse
-
     try:
         service = _LLMService()
         return service._generate_insight(sales_summary, market_summary)
     except Exception:
-        # Fallback dummy jika LLM tidak tersedia
         return InsightResponse(
             summary_analysis="Pasar menunjukkan tren positif pada jam makan siang, namun kompetitor menawarkan harga lebih kompetitif.",
             key_recommendations=[
@@ -254,23 +253,21 @@ class _LLMService:
 
     def _call_ollama(self, system_prompt: str, user_prompt: str) -> dict:
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
-        resp = requests.post(
-            self.endpoint,
-            json={
-                "model": self.model,
-                "prompt": full_prompt,
-                "stream": False,
-                "format": "json"
-            },
-            timeout=60
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return json.loads(data.get("response", "{}"))
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(
+                self.endpoint,
+                json={
+                    "model": self.model,
+                    "prompt": full_prompt,
+                    "stream": False,
+                    "format": "json"
+                }
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return json.loads(data.get("response", "{}"))
 
     def _generate_insight(self, sales_summary: Dict, market_summary: Dict) -> InsightResponse:
-        from app.schemas.insight import InsightResponse
-
         system_prompt = (
             "Kamu adalah AI Business Advisor senior untuk UMKM dan F&B/Retail (SiOslo). "
             "Tugasmu adalah menganalisis data penjualan dan kondisi pasar, lalu memberikan "
