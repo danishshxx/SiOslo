@@ -1,7 +1,7 @@
 import uuid
-from sqlalchemy import Column, String, Integer, Float, Date, Text, DateTime
+from datetime import datetime, timezone
+from sqlalchemy import Column, Text, Integer, Date, String, Float, DateTime, CheckConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
 from app.core.database import Base
 
 class MarketTrend(Base):
@@ -13,33 +13,48 @@ class MarketTrend(Base):
     source = Column(Text)
     date = Column(Date)
 
-    # Tidak ada created_at, karena date sudah mewakili waktu tren
-    # Jika ingin, bisa ditambahkan
-
 class Demographic(Base):
+    """Model untuk menyimpan segmen pasar & keyword tren (dipakai correlation_engine.py
+    untuk keyword_overlap_score). Skema disepakati mengikuti ch3coo -- ini yang cocok
+    dengan scope MVP saat ini (Dead-Stock Pivot), bukan skema location-based yang
+    sebelumnya sempat dipakai (itu untuk use case Hyper-Local Expansion, di-roadmap dulu).
+    """
     __tablename__ = "demographics"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_area = Column(String(100), index=True)
-    population_density = Column(Integer)
-    dominant_age_group = Column(String(50))
-    average_income = Column(Float)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                server_default=text("gen_random_uuid()"))
+    category = Column(Text, nullable=False, index=True)
+    segment_name = Column(Text, nullable=False)
+    keywords = Column(Text, nullable=False)
+    age_group = Column(String(50))
+    source = Column(Text)
+    recorded_at = Column(Date, nullable=False, server_default=text("CURRENT_DATE"))
 
 class FootTraffic(Base):
+    """Model untuk menyimpan data tingkat keramaian/lalu lalang di suatu area.
+    Belum dipakai fitur manapun saat ini -- disiapkan untuk roadmap Hyper-Local."""
     __tablename__ = "foot_traffic"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     location_area = Column(String(100), index=True)
-    time_period = Column(String(50))
-    traffic_volume = Column(Integer)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    time_period = Column(String(50), comment="Misal: Pagi, Siang, Sore, Malam")
+    traffic_volume = Column(Integer, comment="Estimasi jumlah orang lewat per jam")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class CompetitorPrice(Base):
+    """Model untuk menyimpan benchmarking harga kompetitor per kategori & nama produk
+    (dipakai correlation_engine.py untuk price_competitiveness_score). Skema mengikuti
+    ch3coo, selaras dengan tabel demographics di atas."""
     __tablename__ = "competitor_prices"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    competitor_name = Column(String(100), index=True)
-    product_category = Column(String(100))
-    average_price = Column(Float)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                server_default=text("gen_random_uuid()"))
+    category = Column(Text, nullable=False, index=True)
+    product_name = Column(Text, nullable=False)
+    competitor_name = Column(Text, nullable=False)
+    price = Column(Float, nullable=False)
+    recorded_at = Column(Date, nullable=False, server_default=text("CURRENT_DATE"))
+
+    __table_args__ = (
+        CheckConstraint("price > 0", name="ck_competitor_prices_price_positive"),
+    )

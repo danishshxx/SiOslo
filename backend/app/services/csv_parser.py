@@ -11,20 +11,16 @@ Tugas modul ini HANYA dua hal (sengaja dibatasi, sesuai aturan MVP
        dan TRANSPARAN (ada breakdown, bukan angka ajaib).
 
 Modul ini TIDAK memanggil FastAPI, TIDAK memanggil database, dan TIDAK
-memanggil LLM. Ini murni fungsi Python biasa -> bisa di-unit-test
-sendiri oleh Jay tanpa perlu jalankan seluruh stack Docker.
+memanggil LLM. Fungsi inti `parse_and_validate()` murni Python biasa ->
+bisa di-unit-test sendiri tanpa perlu jalankan seluruh stack Docker.
 
-Alur pemakaian oleh ch3coo/main.py:
-
-    from csv_parser import parse_and_validate
-
-    result = parse_and_validate(file_bytes_or_path)
-    if result["status"] == "success":
-        df   = result["cleaned_data"]        # pandas.DataFrame siap pakai
-        meta = result["data_health"]          # dict siap dikirim ke Laravel
-    else:
-        # tampilkan result["data_health"]["warning_message"] ke user
-        ...
+Tiga fungsi publik, tiga konsumen berbeda:
+    - parse_and_validate(source) -> dict
+      Engine inti. Dipakai internal oleh dua wrapper di bawah.
+    - parse_sales_csv(content: bytes, filename: str) -> dict
+      Dipakai app/api/v1/endpoints/sales.py (endpoint /sales/upload).
+    - parse_and_validate_csv(filepath_or_bytes) -> tuple[DataFrame, int, list[str]]
+      Dipakai app/api/v1/endpoints/analyze.py (endpoint /analyze/).
 """
 
 from __future__ import annotations
@@ -51,13 +47,13 @@ REQUIRED_COLUMNS = [
 ]
 
 NUMERIC_COLUMNS = ["qty_sold", "remaining_stock", "unit_price"]
+TEXT_LABEL_COLUMNS = ["product_name", "category"]
 
 # Alias -> nama baku bahasa Inggris (SEPAKAT TIM: variabel internal Inggris,
 # persis sama dengan nama kolom di Postgres). Kunci alias tetap menerima
 # header Indonesia ATAU Inggris -- karena user (UMKM) tetap boleh mengisi
 # CSV dengan header Indonesia yang natural buat mereka, tapi begitu masuk
 # ke sistem, semua otomatis diterjemahkan ke nama Inggris di titik ini SAJA.
-# Mengatasi Alasan Teknis #3 (nama kolom user tidak persis sama).
 # Kunci HARUS huruf kecil & sudah di-strip whitespace.
 COLUMN_ALIASES: dict[str, str] = {
     "tanggal": "transaction_date",
@@ -87,41 +83,35 @@ COLUMN_ALIASES: dict[str, str] = {
     "unit_price": "unit_price",
 }
 
-# Mengatasi Alasan Teknis #5 (placeholder missing value yang beragam)
 MISSING_VALUE_TOKENS = {
     "", "nan", "n/a", "na", "-", "--", "kosong", "tidak ada",
     "?", "null", "none", "unknown", "tidak diketahui",
 }
 
-# Mengatasi Alasan Teknis #10 (CSV injection bila dibuka ulang di Excel)
 FORMULA_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
-# Encoding dicoba berurutan secara DETERMINISTIK (Alasan Kriteria #6:
-# jangan bergantung pada locale OS supaya reproducible di komputer juri)
 ENCODING_CASCADE = ["utf-8-sig", "utf-8", "cp1252", "latin-1"]
 
 MIN_ROWS = 1
-MAX_ROWS = 50_000  # batas wajar untuk demo sinkron, bukan big-data pipeline
+MAX_ROWS = 50_000
 
 
 # =================================================================
-# 2. STRUKTUR HASIL (supaya kontrak dengan Laravel selalu konsisten)
-#    Mengatasi Alasan Kriteria #5 (error harus terstruktur, bukan crash)
+# 2. STRUKTUR HASIL
 # =================================================================
 
 @dataclass
 class ValidationIssue:
-    row_index: Optional[int]   # None jika issue bersifat file-level
+    row_index: Optional[int]
     column: Optional[str]
-    issue_type: str            # "missing_value" | "bad_numeric" | "bad_date" |
-                                # "duplicate" | "outlier" | "unknown_column"
+    issue_type: str
     detail: str
 
 
 @dataclass
 class DataHealthReport:
     reliability_score: int
-    status_color: str          # "green" | "yellow" | "red"
+    status_color: str
     warning_message: str
     score_breakdown: dict = field(default_factory=dict)
     issues: list[ValidationIssue] = field(default_factory=list)
@@ -129,11 +119,9 @@ class DataHealthReport:
 
 # =================================================================
 # 3. LAPISAN BACA FILE (encoding + delimiter sniffing)
-#    Mengatasi Alasan Teknis #1, #2, #9
 # =================================================================
 
 def _read_raw_bytes(source: Union[str, bytes, io.IOBase]) -> bytes:
-    """Menerima path file, bytes, atau file-like object -> selalu bytes."""
     if isinstance(source, bytes):
         return source
     if isinstance(source, str):
@@ -143,8 +131,6 @@ def _read_raw_bytes(source: Union[str, bytes, io.IOBase]) -> bytes:
 
 
 def _decode_with_cascade(raw: bytes) -> tuple[str, str]:
-    """Coba beberapa encoding berurutan. Mengembalikan (teks, encoding_terpakai).
-    Deterministik: urutan encoding SELALU sama, tidak bergantung OS."""
     last_error = None
     for enc in ENCODING_CASCADE:
         try:
@@ -159,22 +145,19 @@ def _decode_with_cascade(raw: bytes) -> tuple[str, str]:
 
 
 def _sniff_delimiter(sample_text: str) -> str:
-    """Deteksi delimiter. Mengatasi kasus Excel Indonesia yang pakai ';'."""
     header_line = sample_text.strip().splitlines()[0] if sample_text.strip() else ""
     candidates = [",", ";", "\t"]
     try:
         dialect = csv.Sniffer().sniff(sample_text[:4096], delimiters="".join(candidates))
         return dialect.delimiter
     except csv.Error:
-        # Fallback: pilih delimiter dengan jumlah kemunculan terbanyak di header
         counts = {d: header_line.count(d) for d in candidates}
         best = max(counts, key=counts.get)
         return best if counts[best] > 0 else ","
 
 
 # =================================================================
-# 4. PEMBERSIHAN NILAI (numeric, tanggal, kolom)
-#    Mengatasi Alasan Teknis #3, #4, #6, #10
+# 4. PEMBERSIHAN NILAI
 # =================================================================
 
 def _normalize_column_name(col: str) -> str:
@@ -182,7 +165,6 @@ def _normalize_column_name(col: str) -> str:
 
 
 def normalize_columns(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
-    """Rename kolom via alias map. Mengembalikan (df_renamed, kolom_tak_dikenal)."""
     rename_map = {}
     unknown = []
     for col in df.columns:
@@ -201,18 +183,12 @@ def _is_missing_token(value) -> bool:
 
 
 def _sanitize_formula_injection(value):
-    """Cegah CSV injection kalau file ini nanti dibuka lagi di Excel oleh juri."""
     if isinstance(value, str) and value.startswith(FORMULA_INJECTION_PREFIXES):
-        return "'" + value  # prefix apostrof menetralkan formula di Excel
+        return "'" + value
     return value
 
 
 def clean_numeric_value(raw_value) -> Optional[float]:
-    """
-    Membersihkan angka dengan format Indonesia: 'Rp65.000' / '65.000' / '65,5'.
-    Aturan: titik = ribuan, koma = desimal (kebalikan format Inggris).
-    Return None kalau tidak bisa diparse (dihitung sebagai bad_numeric).
-    """
     if _is_missing_token(raw_value):
         return None
 
@@ -234,8 +210,6 @@ def clean_numeric_value(raw_value) -> Optional[float]:
 
 
 def parse_date_value(raw_value):
-    """Parse tanggal dengan asumsi EKSPLISIT dayfirst (format ID: DD/MM/YYYY).
-    Eksplisit supaya tidak bergantung locale OS (reproducible di komputer juri)."""
     if _is_missing_token(raw_value):
         return None
     try:
@@ -245,30 +219,19 @@ def parse_date_value(raw_value):
 
 
 # =================================================================
-# 5. VALIDASI & SCORING (formula terdokumentasi, bukan black box)
-#    Mengatasi Alasan Kriteria #2, #8, #9
+# 5. VALIDASI & SCORING
 # =================================================================
 
 def _validate_and_clean(df: pd.DataFrame) -> tuple[pd.DataFrame, list[ValidationIssue]]:
     issues: list[ValidationIssue] = []
     df = df.copy()
 
-    # -- sanitasi formula injection HANYA di kolom label/teks, BUKAN di kolom
-    #    numerik/tanggal. Ini fix dari bug nyata yang ditemukan saat testing:
-    #    angka negatif sah seperti '-10' juga diawali '-', jadi kalau
-    #    disanitasi sama seperti formula, angka negatif jadi rusak dan
-    #    lolos dari deteksi outlier tanpa terdeteksi sama sekali. --
-    TEXT_LABEL_COLUMNS = ["nama_produk", "kategori"]
+    # -- sanitasi formula injection HANYA di kolom label/teks --
     for col in TEXT_LABEL_COLUMNS:
         if col in df.columns:
             df[col] = df[col].map(_sanitize_formula_injection)
 
-    # -- kolom numerik --
-    # Catatan penting: setelah pandas .map() mengoper hasil ke Series
-    # bertipe angka, nilai Python `None` OTOMATIS dikonversi jadi `NaN`
-    # (float) oleh pandas. Maka pengecekan HARUS pakai pd.isna(val),
-    # bukan `val is None` -- bug nyata lain yang ditemukan saat testing,
-    # yang tadinya bikin banyak isu gagal tercatat walau datanya rusak.
+    # -- kolom numerik (nama Inggris, sesuai REQUIRED_COLUMNS/NUMERIC_COLUMNS) --
     for col in NUMERIC_COLUMNS:
         if col not in df.columns:
             continue
@@ -282,41 +245,40 @@ def _validate_and_clean(df: pd.DataFrame) -> tuple[pd.DataFrame, list[Validation
                                                f"Nilai kosong di kolom '{col}'"))
         df[col] = cleaned
 
-    # -- kolom tanggal (rawan bug sama: hasil None bisa dikonversi jadi NaT) --
-    if "tanggal" in df.columns:
-        cleaned_dates = df["tanggal"].map(parse_date_value)
-        for idx, (orig, val) in enumerate(zip(df["tanggal"], cleaned_dates)):
+    # -- kolom tanggal (nama Inggris: transaction_date) --
+    if "transaction_date" in df.columns:
+        cleaned_dates = df["transaction_date"].map(parse_date_value)
+        for idx, (orig, val) in enumerate(zip(df["transaction_date"], cleaned_dates)):
             if pd.isna(val) and not _is_missing_token(orig):
-                issues.append(ValidationIssue(idx, "tanggal", "bad_date",
+                issues.append(ValidationIssue(idx, "transaction_date", "bad_date",
                                                f"Tanggal '{orig}' tidak valid (harap DD/MM/YYYY)"))
             elif pd.isna(val):
-                issues.append(ValidationIssue(idx, "tanggal", "missing_value",
+                issues.append(ValidationIssue(idx, "transaction_date", "missing_value",
                                                "Tanggal kosong"))
-        df["tanggal"] = cleaned_dates
+        df["transaction_date"] = cleaned_dates
 
-    # -- outlier: nilai mustahil (Alasan Teknis #8), definisi simpel & konsisten
-    #    dengan yang akan ditulis di bab Metodologi (Alasan Kriteria #9) --
-    if "sisa_stok" in df.columns:
-        neg_mask = df["sisa_stok"] < 0
-        for idx in df.index[neg_mask]:
-            issues.append(ValidationIssue(int(idx), "sisa_stok", "outlier",
+    # -- outlier: nilai mustahil (nama Inggris) --
+    if "remaining_stock" in df.columns:
+        neg_mask = df["remaining_stock"] < 0
+        for idx in df.index[neg_mask.fillna(False)]:
+            issues.append(ValidationIssue(int(idx), "remaining_stock", "outlier",
                                            "Stok negatif (mustahil secara bisnis)"))
-    if "terjual_bulan_ini" in df.columns:
-        neg_mask = df["terjual_bulan_ini"] < 0
-        for idx in df.index[neg_mask]:
-            issues.append(ValidationIssue(int(idx), "terjual_bulan_ini", "outlier",
+    if "qty_sold" in df.columns:
+        neg_mask = df["qty_sold"] < 0
+        for idx in df.index[neg_mask.fillna(False)]:
+            issues.append(ValidationIssue(int(idx), "qty_sold", "outlier",
                                            "Jumlah terjual negatif (mustahil secara bisnis)"))
-    if "harga_satuan" in df.columns:
-        bad_price_mask = df["harga_satuan"] <= 0
+    if "unit_price" in df.columns:
+        bad_price_mask = df["unit_price"] <= 0
         for idx in df.index[bad_price_mask.fillna(False)]:
-            issues.append(ValidationIssue(int(idx), "harga_satuan", "outlier",
+            issues.append(ValidationIssue(int(idx), "unit_price", "outlier",
                                            "Harga nol atau negatif"))
 
-    # -- duplikat: produk sama muncul lebih dari sekali (Alasan Teknis #7) --
-    if "nama_produk" in df.columns and "kategori" in df.columns:
-        dup_mask = df.duplicated(subset=["nama_produk", "kategori"], keep="first")
+    # -- duplikat (nama Inggris) --
+    if "product_name" in df.columns and "category" in df.columns:
+        dup_mask = df.duplicated(subset=["product_name", "category"], keep="first")
         for idx in df.index[dup_mask]:
-            issues.append(ValidationIssue(int(idx), "nama_produk", "duplicate",
+            issues.append(ValidationIssue(int(idx), "product_name", "duplicate",
                                            "Baris produk duplikat (baris pertama dipakai)"))
         df = df[~dup_mask]
 
@@ -326,15 +288,12 @@ def _validate_and_clean(df: pd.DataFrame) -> tuple[pd.DataFrame, list[Validation
 def compute_reliability_score(total_rows: int, issues: list[ValidationIssue]) -> tuple[int, dict]:
     """
     Formula TERBUKA & DETERMINISTIK (harus sama persis dengan yang ditulis
-    di bab Metodologi proposal -- Alasan Kriteria #9):
+    di bab Metodologi proposal):
 
         score = 100
               - (persentase baris bermasalah missing_value/bad_numeric/bad_date) * 40
               - (persentase baris duplicate) * 20
               - (persentase baris outlier) * 40
-
-    Setiap komponen dibatasi maksimum kontribusinya sendiri (tidak saling
-    melebihi), lalu skor akhir di-clip ke rentang [0, 100].
     """
     if total_rows == 0:
         return 0, {"reason": "Tidak ada baris data untuk dinilai"}
@@ -369,9 +328,7 @@ def _status_from_score(score: int) -> tuple[str, str]:
 
 
 # =================================================================
-# 6. ENTRYPOINT UTAMA
-#    Mengatasi Alasan Kriteria #1 (modular, tidak nempel FastAPI) dan
-#    Alasan Kriteria #4 (graceful degradation, bukan crash)
+# 6. ENGINE INTI
 # =================================================================
 
 def parse_and_validate(source: Union[str, bytes, io.IOBase]) -> dict:
@@ -460,13 +417,11 @@ def parse_and_validate(source: Union[str, bytes, io.IOBase]) -> dict:
                 for i in health.issues
             ],
         },
-        "cleaned_data": cleaned_df,  # pandas.DataFrame -> siap dipakai correlation_engine.py
+        "cleaned_data": cleaned_df,
     }
 
 
 def _error_response(message: str) -> dict:
-    """Kontrak error KONSISTEN -- Laravel selalu bisa render pesan ini
-    tanpa perlu cek struktur berbeda-beda (Alasan Kriteria #5)."""
     return {
         "status": "error",
         "meta": {},
@@ -482,9 +437,89 @@ def _error_response(message: str) -> dict:
 
 
 # =================================================================
-# 7. DEMO MANDIRI -- bisa dijalankan tanpa Docker/FastAPI sama sekali.
-#    Ini juga jadi bahan video Proof of Work (Alasan Kriteria #10:
-#    harus ada demo nyata fitur Data Health Check).
+# 7. WRAPPER #1 -- dipakai app/api/v1/endpoints/sales.py
+# =================================================================
+
+def parse_sales_csv(content: bytes, filename: str) -> dict:
+    """
+    Adapter untuk endpoint /sales/upload. Sengaja return bentuk FLAT
+    (bukan bentuk kaya parse_and_validate) karena sales.py cuma insert
+    4 kolom dasar tanpa fitur data_health -- lihat parse_and_validate_csv()
+    di bawah untuk versi yang dipakai /analyze/, yang membawa reliability
+    score.
+
+    Return:
+        {"filename": str, "total_rows": int, "items": [dict, ...]}
+        Setiap item dict: product_name, category, qty_sold, remaining_stock
+        (angka NaN dikonversi ke 0 di sini -- lihat catatan NaN di bawah).
+
+    Raises:
+        ValueError -- kalau CSV gagal divalidasi (kolom wajib hilang, dst),
+        supaya endpoint bisa tangkap dan balikin HTTP 422 yang jelas.
+    """
+    result = parse_and_validate(content)
+    if result["status"] != "success":
+        raise ValueError(result["data_health"]["warning_message"])
+
+    df = result["cleaned_data"]
+    items = []
+    for _, row in df.iterrows():
+        # PENTING: row.get("qty_sold", 0) TIDAK cukup -- kalau kolomnya ADA
+        # tapi nilainya NaN (baris rusak yang memang didesain lolos ke sini
+        # untuk transparansi), .get() tetap mengembalikan NaN, bukan default.
+        # Makanya perlu pd.notna() eksplisit di sini.
+        qty = row.get("qty_sold")
+        stock = row.get("remaining_stock")
+        items.append({
+            "product_name": row.get("product_name"),
+            "category": row.get("category") if pd.notna(row.get("category")) else "Uncategorized",
+            "qty_sold": int(qty) if pd.notna(qty) else 0,
+            "remaining_stock": int(stock) if pd.notna(stock) else 0,
+        })
+
+    return {
+        "filename": filename,
+        "total_rows": int(result["meta"]["rows_after_cleaning"]),
+        "items": items,
+    }
+
+
+# =================================================================
+# 8. WRAPPER #2 -- dipakai app/api/v1/endpoints/analyze.py
+# =================================================================
+
+def parse_and_validate_csv(filepath_or_bytes: Union[str, bytes]) -> tuple[pd.DataFrame, int, list[str]]:
+    """
+    Adapter untuk endpoint /analyze/. Return tuple 3 elemen sesuai yang
+    di-unpack analyze.py: (cleaned_df, reliability_score, warnings).
+
+    cleaned_df: DataFrame dengan nama kolom Inggris (product_name, category,
+                qty_sold, remaining_stock, unit_price, transaction_date),
+                masih bisa berisi NaN di baris yang datanya rusak --
+                pemanggil (analyze.py) wajib pakai pd.notna() sebelum
+                cast ke int/float.
+    reliability_score: 0-100
+    warnings: list of string, kosong kalau tidak ada isu sama sekali
+
+    Raises:
+        ValueError -- kalau CSV gagal divalidasi total (kolom wajib hilang,
+        file kosong, dst), supaya endpoint balikin HTTP 422.
+    """
+    result = parse_and_validate(filepath_or_bytes)
+    if result["status"] != "success":
+        raise ValueError(result["data_health"]["warning_message"])
+
+    warnings = [issue["detail"] for issue in result["data_health"]["issues"]]
+
+    return (
+        result["cleaned_data"],
+        result["data_health"]["reliability_score"],
+        warnings,
+    )
+
+
+# =================================================================
+# 9. DEMO MANDIRI
 # =================================================================
 
 if __name__ == "__main__":
@@ -493,19 +528,24 @@ if __name__ == "__main__":
     DIRTY_SAMPLE_CSV = (
         "tanggal;Nama Produk;kategori;terjual_bulan_ini;sisa_stok;harga_satuan\n"
         "01/06/2026;Kaos Polos Neon;Fashion;12;200;Rp65.000\n"
-        "01/06/2026;Kaos Polos Neon;Fashion;12;200;Rp65.000\n"  # duplikat
+        "01/06/2026;Kaos Polos Neon;Fashion;12;200;Rp65.000\n"
         "02/06/2026;Jaket Denim Lama;Fashion;5;45;180000\n"
-        "03/06/2026;Topi Rajut;Aksesoris;-;30;25000\n"           # missing terjual
-        "2026-06-04;Sandal Jepit;Aksesoris;8;-10;15000\n"        # stok negatif + format tanggal beda
-        "05/06/2026;Tas Kanvas;Aksesoris;3;abc;90000\n"          # sisa_stok bukan angka
+        "03/06/2026;Topi Rajut;Aksesoris;-;30;25000\n"
+        "2026-06-04;Sandal Jepit;Aksesoris;8;-10;15000\n"
+        "05/06/2026;Tas Kanvas;Aksesoris;3;abc;90000\n"
     ).encode("utf-8-sig")
 
-    print("=== DEMO: parse_and_validate() pada CSV dummy yang sengaja kotor ===\n")
+    print("=== DEMO 1: parse_and_validate() (engine inti) ===\n")
     result = parse_and_validate(DIRTY_SAMPLE_CSV)
-
     printable = {k: v for k, v in result.items() if k != "cleaned_data"}
     print(json.dumps(printable, indent=2, ensure_ascii=False, default=str))
 
-    if result["status"] == "success":
-        print("\n=== cleaned_data (DataFrame setelah dibersihkan) ===")
-        print(result["cleaned_data"])
+    print("\n=== DEMO 2: parse_sales_csv() (wrapper utk sales.py) ===\n")
+    sales_result = parse_sales_csv(DIRTY_SAMPLE_CSV, "test.csv")
+    print(json.dumps(sales_result, indent=2, ensure_ascii=False, default=str))
+
+    print("\n=== DEMO 3: parse_and_validate_csv() (wrapper utk analyze.py) ===\n")
+    df, score, warnings = parse_and_validate_csv(DIRTY_SAMPLE_CSV)
+    print("reliability_score:", score)
+    print("warnings:", warnings)
+    print(df)

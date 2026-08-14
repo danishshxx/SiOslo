@@ -1,9 +1,12 @@
+from __future__ import annotations
 import datetime as dt
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
-# -------------------- MarketTrend --------------------
+# ==========================================
+# Schemas untuk MarketTrend
+# ==========================================
 class MarketTrendBase(BaseModel):
     keyword: str
     volume: int = 0
@@ -15,26 +18,31 @@ class MarketTrendCreate(MarketTrendBase):
 
 class MarketTrendResponse(MarketTrendBase):
     id: UUID
+    
     model_config = ConfigDict(from_attributes=True)
 
-
-# -------------------- Demographic --------------------
+# ==========================================
+# Schemas untuk Demographic
+# ==========================================
 class DemographicBase(BaseModel):
-    location_area: str
-    population_density: int
-    dominant_age_group: str
-    average_income: float
+    category: str
+    segment_name: str
+    keywords: str
+    age_group: Optional[str] = None
+    source: Optional[str] = None
 
 class DemographicCreate(DemographicBase):
     pass
 
 class DemographicResponse(DemographicBase):
     id: UUID
-    created_at: dt.datetime
+    recorded_at: dt.date
+
     model_config = ConfigDict(from_attributes=True)
 
-
-# -------------------- FootTraffic --------------------
+# ==========================================
+# Schemas untuk FootTraffic
+# ==========================================
 class FootTrafficBase(BaseModel):
     location_area: str
     time_period: str
@@ -46,19 +54,23 @@ class FootTrafficCreate(FootTrafficBase):
 class FootTrafficResponse(FootTrafficBase):
     id: UUID
     created_at: dt.datetime
+    
     model_config = ConfigDict(from_attributes=True)
 
-
-# -------------------- CompetitorPrice --------------------
+# ==========================================
+# Schemas untuk CompetitorPrice
+# ==========================================
 class CompetitorPriceBase(BaseModel):
+    category: str
+    product_name: str
     competitor_name: str
-    product_category: str
-    average_price: float
+    price: float
 
 class CompetitorPriceCreate(CompetitorPriceBase):
     pass
 
 class CompetitorPriceResponse(CompetitorPriceBase):
     id: UUID
-    created_at: dt.datetime
+    recorded_at: dt.date
+
     model_config = ConfigDict(from_attributes=True)

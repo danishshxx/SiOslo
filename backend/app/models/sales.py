@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, DateTime
+from sqlalchemy import Column, String, Integer, ForeignKey, Text, DateTime, Date, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -25,7 +25,9 @@ class SalesItem(Base):
     report_id = Column(UUID(as_uuid=True), ForeignKey("sales_reports.id", ondelete="CASCADE"), nullable=False)
     product_name = Column(Text, nullable=False)
     category = Column(Text)
-    qty_sold = Column(Integer, default=0)
-    remaining_stock = Column(Integer, default=0)
+    qty_sold = Column(Integer, default=0, nullable=True)
+    remaining_stock = Column(Integer, default=0, nullable=True)
+    transaction_date = Column(Date, nullable=True)
+    unit_price = Column(Float, nullable=True)
 
     report = relationship("SalesReport", back_populates="items")

@@ -185,3 +185,60 @@ if __name__ == "__main__":
     ])
 
     print(json.dumps(compute_correlation(sales_df, demographics_df, competitor_prices_df), indent=2, ensure_ascii=False, default=str))
+
+# =================================================================
+# WRAPPER -- dipakai app/api/v1/endpoints/analyze.py
+# =================================================================
+
+def calculate_correlation(sales_df: pd.DataFrame, target_lokasi: str, db) -> dict:
+    """
+    Adapter untuk endpoint /analyze/. Beda dari compute_correlation():
+    - Query sendiri demographics & competitor_prices dari database (butuh db session)
+    - Meratakan hasil per-produk (list) jadi satu angka representatif,
+      karena analyze.py butuh satu skor tunggal untuk seluruh analisis,
+      bukan skor per baris produk.
+
+    target_lokasi TIDAK dipakai untuk filter query -- skema demographics/
+    competitor_prices (ch3coo) sengaja tidak punya kolom lokasi (fokus MVP
+    saat ini: Dead-Stock Pivot via keyword matching, bukan Hyper-Local).
+    target_lokasi cuma diteruskan sebagai teks konteks ke LLM di langkah
+    berikutnya (generate_innovation_blueprint), bukan dipakai di sini.
+    """
+    from app.models.market import Demographic, CompetitorPrice
+
+    demo_rows = db.query(Demographic).all()
+    demographics_df = pd.DataFrame([{
+        "category": d.category,
+        "segment_name": d.segment_name,
+        "keywords": d.keywords,
+        "age_group": d.age_group,
+        "source": d.source,
+    } for d in demo_rows])
+
+    comp_rows = db.query(CompetitorPrice).all()
+    competitor_prices_df = pd.DataFrame([{
+        "category": c.category,
+        "product_name": c.product_name,
+        "competitor_name": c.competitor_name,
+        "price": c.price,
+    } for c in comp_rows])
+
+    result = compute_correlation(sales_df, demographics_df, competitor_prices_df)
+    corr_data = result.get("correlation_data") or {}
+
+    keyword_overlap = corr_data.get("keyword_overlap", {})
+    per_product = keyword_overlap.get("per_product", [])
+    if per_product:
+        avg_score = sum(p["keyword_overlap_score"] for p in per_product) / len(per_product)
+        best = max(per_product, key=lambda p: p["keyword_overlap_score"])
+        trend_source = best.get("matched_segment") or "N/A"
+    else:
+        avg_score = 0.0
+        trend_source = keyword_overlap.get("reason", "Belum ada data tren referensi.")
+
+    return {
+        "keyword_overlap_score": round(avg_score, 4),
+        "market_trend_growth": "+0%",  # TODO: belum ada logika hitung growth dari data historis
+        "trend_reference_source": trend_source,
+        "raw_correlation_data": corr_data,  # detail lengkap per-produk, untuk confidence trail nanti
+    }

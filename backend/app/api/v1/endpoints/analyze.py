@@ -2,6 +2,7 @@
 import uuid
 import os
 import tempfile
+import pandas as pd
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,25 @@ from app.services.llm_service import generate_innovation_blueprint
 from app.schemas.analysis import AnalysisResponse
 
 router = APIRouter(prefix="/analyze", tags=["Analysis"])
+
+
+def _safe_int(value, default=0):
+    """int() polos crash kalau value NaN. .get(key, default) TIDAK menolong
+    di sini karena default cuma dipakai kalau key hilang total, bukan kalau
+    nilainya ADA tapi NaN -- dan NaN memang skenario yang sengaja didesain
+    muncul dari csv_parser.py untuk baris data yang rusak."""
+    return int(value) if pd.notna(value) else default
+
+
+def _safe_float(value, default=None):
+    return float(value) if pd.notna(value) else default
+
+
+def _safe_date(value, default=None):
+    if pd.isna(value):
+        return default
+    return value.date() if hasattr(value, "date") else value
+
 
 @router.post("/", response_model=AnalysisResponse)
 def analyze_sales(
@@ -42,11 +62,18 @@ def analyze_sales(
     # 3. Panggil CSV Parser Jay (sinkron)
     try:
         cleaned_df, reliability_score, warnings = parse_and_validate_csv(tmp_path)
+    except ValueError as e:
+        os.unlink(tmp_path)
+        raise HTTPException(status_code=422, detail=f"CSV tidak valid: {str(e)}")
     except Exception as e:
         os.unlink(tmp_path)
         raise HTTPException(status_code=422, detail=f"CSV tidak valid: {str(e)}")
 
     # 4. Simpan data penjualan ke database
+    #    Nama kolom di cleaned_df sudah Inggris (product_name, category,
+    #    qty_sold, remaining_stock, unit_price, transaction_date) --
+    #    JANGAN pakai nama Indonesia lama (nama_produk, dst), itu sudah
+    #    tidak ada lagi sejak csv_parser.py di-refactor.
     try:
         report = SalesReport(
             filename=file.filename,
@@ -58,10 +85,12 @@ def analyze_sales(
         for _, row in cleaned_df.iterrows():
             item = SalesItem(
                 report_id=report.id,
-                product_name=row.get("nama_produk"),
-                category=row.get("kategori"),
-                qty_sold=int(row.get("terjual_bulan_ini", 0)),
-                remaining_stock=int(row.get("sisa_stok", 0))
+                product_name=row.get("product_name"),
+                category=row.get("category") if pd.notna(row.get("category")) else "Uncategorized",
+                qty_sold=_safe_int(row.get("qty_sold"), default=None),
+                remaining_stock=_safe_int(row.get("remaining_stock"), default=None),
+                unit_price=_safe_float(row.get("unit_price")),
+                transaction_date=_safe_date(row.get("transaction_date")),
             )
             db.add(item)
         db.commit()
@@ -72,7 +101,7 @@ def analyze_sales(
 
     # 5. Panggil Correlation Engine ch3coo
     try:
-        corr_result = calculate_correlation(cleaned_df, target_lokasi)
+        corr_result = calculate_correlation(cleaned_df, target_lokasi, db)
     except Exception as e:
         os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Gagal menghitung korelasi: {str(e)}")
