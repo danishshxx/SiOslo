@@ -1,4 +1,5 @@
-# File: app/api/v1/endpoints/analyze.py
+from app.services.csv_parser import parse_and_validate_csv
+from app.services.correlation_engine import calculate_correlation
 import uuid
 import os
 import tempfile
@@ -8,12 +9,21 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.sales import SalesReport, SalesItem
-from app.services.csv_parser import parse_and_validate_csv
-from app.services.correlation_engine import calculate_correlation
+from app.models.market import Demographic, CompetitorPrice   # ← tambahan
+from app.services.csv_parser import parse_and_validate
+from app.services.correlation_engine import compute_correlation   # ← langsung fungsi asli ch3coo
 from app.services.llm_service import generate_innovation_blueprint
-from app.schemas.analysis import AnalysisResponse
+from app.schemas.analysis import (
+    AnalysisResponse,
+    DataHealthMetric,
+    DataHealthIssue,
+    CorrelationMetric,
+    PerProductScore,   # ← tambahan
+    InnovationBlueprintItem,
+)
 
-router = APIRouter(prefix="/analyze", tags=["Analysis"])
+router = APIRouter(prefix="/analyze")
+
 
 
 def _safe_int(value, default=0):
@@ -41,15 +51,11 @@ def analyze_sales(
     session_id: str = Form(default=None),
     db: Session = Depends(get_db)
 ):
-    """
-    Endpoint Utama: Menerima CSV penjualan, analisis korelasi pasar,
-    dan menghasilkan blueprint inovasi produk.
-    """
-    # 1. Generate session_id jika tidak dikirim
+    # 1. session_id
     if not session_id:
         session_id = str(uuid.uuid4())
 
-    # 2. Simpan file CSV ke temporary file (dibutuhkan oleh parser Jay)
+    # 2. Simpan CSV sementara
     try:
         suffix = os.path.splitext(file.filename)[1]
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -67,7 +73,7 @@ def analyze_sales(
         raise HTTPException(status_code=422, detail=f"CSV tidak valid: {str(e)}")
     except Exception as e:
         os.unlink(tmp_path)
-        raise HTTPException(status_code=422, detail=f"CSV tidak valid: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error tak terduga: {str(e)}")
 
     # 4. Simpan data penjualan ke database
     #    Nama kolom di cleaned_df sudah Inggris (product_name, category,
@@ -80,7 +86,7 @@ def analyze_sales(
             total_rows=len(cleaned_df)
         )
         db.add(report)
-        db.flush()  # supaya report.id tersedia sebelum commit
+        db.flush()
 
         for _, row in cleaned_df.iterrows():
             item = SalesItem(
@@ -94,46 +100,86 @@ def analyze_sales(
             )
             db.add(item)
         db.commit()
+        
     except Exception as e:
         db.rollback()
         os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Gagal menyimpan data: {str(e)}")
 
-    # 5. Panggil Correlation Engine ch3coo
+    # 5. Ambil data pasar dari database & konversi ke DataFrame
     try:
         corr_result = calculate_correlation(cleaned_df, target_lokasi, db)
     except Exception as e:
         os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Gagal menghitung korelasi: {str(e)}")
 
-    # 6. Bentuk metrik health & correlation
-    data_health = {
-        "reliability_score": reliability_score,
-        "status_color": "green" if reliability_score >= 70 else ("yellow" if reliability_score >= 40 else "red"),
-        "warning_message": "; ".join(warnings) if warnings else None
-    }
-    correlation_metrics = {
-        "keyword_overlap_score": corr_result["keyword_overlap_score"],
-        "market_trend_growth": corr_result.get("market_trend_growth", "+0%"),
-        "trend_reference_source": corr_result.get("trend_reference_source", "N/A")
-    }
+    # 7. Ekstrak metrik ringkasan
+    if corr_result["status"] == "success":
+        kw_data = corr_result["correlation_data"]["keyword_overlap"]
+        price_data = corr_result["correlation_data"]["price_competitiveness"]
 
-    # 7. Panggil LLM untuk blueprint inovasi
+        # Rata-rata keyword overlap
+        scores = [p["keyword_overlap_score"] for p in kw_data.get("per_product", [])]
+        avg_kw_score = round(sum(scores) / len(scores), 4) if scores else 0.0
+
+        # Gabungkan detail per produk
+        # Gabungkan detail per produk
+        per_product_details = []
+        for kw, pr in zip(kw_data.get("per_product", []), price_data.get("per_product", [])):
+            per_product_details.append(PerProductScore(
+                product_name=kw["product_name"],
+                category=kw.get("category"),
+                keyword_overlap_score=kw["keyword_overlap_score"],
+                matched_keywords=kw.get("matched_keywords", []),
+                matched_segment=kw.get("matched_segment"),
+                price_competitiveness_score=pr.get("price_competitiveness_score"),
+                user_price=pr.get("user_price"),
+                avg_competitor_price=pr.get("avg_competitor_price")
+            ))
+
+        # Jika tidak ada detail, set None agar validasi Pydantic lolos
+        if not per_product_details:
+            per_product_details = None
+    else:
+        avg_kw_score = 0.0
+        per_product_details = None
+
+    # Sementara market_trend_growth kita isi placeholder, bisa dari foot_traffic nanti
+    market_trend_growth = "+0%"
+    trend_reference_source = "static_snapshot"
+
+    # 8. Bangun response data_health
+    status_color = "green" if reliability_score >= 80 else "yellow" if reliability_score >= 50 else "red"
+
+    data_health = DataHealthMetric(
+        reliability_score=reliability_score,
+        status_color=status_color,
+        warning_message=warnings[0] if warnings else None,
+        score_breakdown=None,
+        issues=None
+    )
+
+    correlation_metrics = CorrelationMetric(
+        keyword_overlap_score=avg_kw_score,
+        market_trend_growth=market_trend_growth,
+        trend_reference_source=trend_reference_source,
+        per_product_details=per_product_details
+    )
+
+    # 9. LLM (masih placeholder)
     try:
         innovations = generate_innovation_blueprint(
             cleaned_data=cleaned_df,
-            data_health=data_health,
-            correlation_metrics=correlation_metrics,
+            data_health=data_health.model_dump(),
+            correlation_metrics=correlation_metrics.model_dump(),
             target_lokasi=target_lokasi
         )
     except Exception as e:
         os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"LLM error: {str(e)}")
 
-    # 8. Bersihkan file sementara
     os.unlink(tmp_path)
 
-    # 9. Return response sesuai kontrak API
     return {
         "status": "success",
         "data_health": data_health,
