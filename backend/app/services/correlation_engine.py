@@ -192,17 +192,23 @@ if __name__ == "__main__":
 
 def calculate_correlation(sales_df: pd.DataFrame, target_lokasi: str, db) -> dict:
     """
-    Adapter untuk endpoint /analyze/. Beda dari compute_correlation():
-    - Query sendiri demographics & competitor_prices dari database (butuh db session)
-    - Meratakan hasil per-produk (list) jadi satu angka representatif,
-      karena analyze.py butuh satu skor tunggal untuk seluruh analisis,
-      bukan skor per baris produk.
+    Adapter untuk endpoint /analyze/. Tugasnya CUMA satu: query demographics
+    & competitor_prices dari database (butuh db session), lalu langsung
+    delegasikan ke compute_correlation() dan kembalikan HASILNYA APA ADANYA
+    -- TIDAK diratakan/direshape.
+
+    PENTING: analyze.py versi terbaru mengakses corr_result["status"] dan
+    corr_result["correlation_data"]["keyword_overlap"]/["price_competitiveness"]
+    langsung -- persis bentuk asli compute_correlation(). Jangan ubah
+    fungsi ini untuk return bentuk lain (versi sebelumnya sempat meratakan
+    jadi satu skor rata-rata, itu bikin KeyError karena analyze.py sudah
+    berkembang untuk pakai detail per-produk lewat PerProductScore).
 
     target_lokasi TIDAK dipakai untuk filter query -- skema demographics/
     competitor_prices (ch3coo) sengaja tidak punya kolom lokasi (fokus MVP
     saat ini: Dead-Stock Pivot via keyword matching, bukan Hyper-Local).
-    target_lokasi cuma diteruskan sebagai teks konteks ke LLM di langkah
-    berikutnya (generate_innovation_blueprint), bukan dipakai di sini.
+    Parameter ini disimpan di signature untuk konsistensi API dan potensi
+    dipakai LLM sebagai konteks prompt, bukan untuk query di sini.
     """
     from app.models.market import Demographic, CompetitorPrice
 
@@ -223,22 +229,4 @@ def calculate_correlation(sales_df: pd.DataFrame, target_lokasi: str, db) -> dic
         "price": c.price,
     } for c in comp_rows])
 
-    result = compute_correlation(sales_df, demographics_df, competitor_prices_df)
-    corr_data = result.get("correlation_data") or {}
-
-    keyword_overlap = corr_data.get("keyword_overlap", {})
-    per_product = keyword_overlap.get("per_product", [])
-    if per_product:
-        avg_score = sum(p["keyword_overlap_score"] for p in per_product) / len(per_product)
-        best = max(per_product, key=lambda p: p["keyword_overlap_score"])
-        trend_source = best.get("matched_segment") or "N/A"
-    else:
-        avg_score = 0.0
-        trend_source = keyword_overlap.get("reason", "Belum ada data tren referensi.")
-
-    return {
-        "keyword_overlap_score": round(avg_score, 4),
-        "market_trend_growth": "+0%",  # TODO: belum ada logika hitung growth dari data historis
-        "trend_reference_source": trend_source,
-        "raw_correlation_data": corr_data,  # detail lengkap per-produk, untuk confidence trail nanti
-    }
+    return compute_correlation(sales_df, demographics_df, competitor_prices_df)
