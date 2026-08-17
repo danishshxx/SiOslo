@@ -11,22 +11,45 @@ from app.core.config import settings
 # FUNGSI UTAMA – dipanggil oleh endpoint /analyze
 # ═══════════════════════════════════════════════════════════════════
 
+def _sanitize_price_ceiling(item):
+    """Perbaiki competitor_price_ceiling yang tidak wajar TANPA membuang
+    seluruh item. Ditemukan lewat testing: model konsisten (6 dari 6 kasus
+    di 3 percobaan nyata) menghasilkan ceiling 4-14x lipat dari
+    recommended_price untuk skenario 'belum ada kecocokan tren' -- padahal
+    teks justifikasi & whatsapp_copy_text-nya sendiri sudah benar dan
+    spesifik. Menolak seluruh item karena 1 angka yang meleset itu boros --
+    cukup angkanya saja yang dikoreksi ke rentang wajar (maks 1.3x)."""
+    price = item.get("recommended_price")
+    ceiling = item.get("competitor_price_ceiling")
+    if price and price > 0:
+        if not ceiling or ceiling <= 0 or ceiling / price > 1.5:
+            item["competitor_price_ceiling"] = int(price * 1.3)
+    return item
+
+
 def _validate_blueprint_grounding(items, actual_products, target):
     """Cek dasar: blueprint dari LLM harus merujuk produk & lokasi yang
     BENERAN ada di prompt -- kalau tidak, itu tanda model overfit/salah
     baca konteks (nyasar ke contoh training, bukan menjawab prompt yang
-    sebenarnya diberikan)."""
+    sebenarnya diberikan). Perbaikan harga ditangani terpisah lewat
+    _sanitize_price_ceiling() SEBELUM fungsi ini dipanggil -- di sini cuma
+    cek recommended_price valid (bukan nol/negatif), bukan rasio ke ceiling."""
     if not items:
         return False
     for item in items:
         if item.get("target_location") != target:
             return False
+
         text = (item.get("title", "") + " " + item.get("justification", "")).lower()
         mentioned = any(
             any(word.lower() in text for word in p.split() if len(word) > 3)
             for p in actual_products
         )
         if not mentioned:
+            return False
+
+        price = item.get("recommended_price")
+        if not price or price <= 0:
             return False
     return True
 
@@ -49,15 +72,28 @@ def generate_innovation_blueprint(
     # 2. Coba panggil Ollama
     try:
         llm_json = _call_ollama(prompt)
-        items = _parse_llm_response(llm_json, target_lokasi)
-        actual_products = cleaned_data["product_name"].dropna().tolist()
-        if items and _validate_blueprint_grounding(items, actual_products, target_lokasi):
-            return items
-    except Exception:
-        pass  # fallback jika gagal
+        print(f"[LLM RAW RESPONSE] {llm_json}")
 
-    # 3. Fallback simulasi (juga dipakai kalau LLM "nyasar" -- lolos validasi JSON
-    #    tapi isinya tidak relevan dengan prompt yang sebenarnya)
+        items = _parse_llm_response(llm_json, target_lokasi)  # sekarang list of dict
+        print(f"[LLM PARSED] {len(items) if items else 0} item(s)")
+
+        if items:
+            items = [_sanitize_price_ceiling(item) for item in items]  # kerja di dict, gak berubah
+        actual_products = cleaned_data["product_name"].dropna().tolist()
+
+        if items:
+            grounded = _validate_blueprint_grounding(items, actual_products, target_lokasi)  # kerja di dict, gak berubah
+            print(f"[GROUNDING CHECK] valid={grounded} | expected_products={actual_products} | expected_location={target_lokasi}")
+            if grounded:
+                return [InnovationBlueprintItem(**i) for i in items]  # konversi balik ke Pydantic di sini
+        else:
+            print("[LLM FALLBACK] items kosong setelah parsing -- kemungkinan _parse_llm_response gagal baca format JSON")
+
+    except Exception as e:
+        print(f"[LLM FALLBACK TRIGGERED - EXCEPTION] {type(e).__name__}: {e}")
+        return _simulate_blueprint(cleaned_data, correlation_metrics, target_lokasi)
+
+    print("[LLM FALLBACK] grounding validation gagal, jatuh ke simulasi")
     return _simulate_blueprint(cleaned_data, correlation_metrics, target_lokasi)
 
 
@@ -151,7 +187,7 @@ def _build_prompt(
 
 def _call_ollama(prompt: str) -> dict:
     """Mengirim prompt ke Ollama API secara sinkron dengan httpx."""
-    with httpx.Client(timeout=90.0) as client:
+    with httpx.Client(timeout=300.0) as client:  # naik dari 90 -> 300 detik
         resp = client.post(
             settings.LLM_ENDPOINT,
             json={
@@ -165,26 +201,27 @@ def _call_ollama(prompt: str) -> dict:
         data = resp.json()
         llm_output = data.get("response", "[]").strip()
 
-        # Bersihkan jika ada markdown code fence
         if llm_output.startswith("```"):
             llm_output = llm_output.split("\n", 1)[-1].rsplit("\n", 1)[0]
 
         return json.loads(llm_output)
 
+def _parse_llm_response(llm_json: Any, target: str) -> List[dict]:
+    """Validasi dan konversi response LLM ke list dict yang sudah tervalidasi skema."""
+    if isinstance(llm_json, dict) and "data" in llm_json:
+        llm_json = llm_json["data"]
 
-def _parse_llm_response(llm_json: Any, target: str) -> List[InnovationBlueprintItem]:
-    """Validasi dan konversi response LLM ke list InnovationBlueprintItem."""
     if not isinstance(llm_json, list):
         return []
 
     items = []
     for item in llm_json:
         try:
-            # Pastikan target_location sama dengan yang diminta
             item["target_location"] = target
-            items.append(InnovationBlueprintItem(**item))
+            validated = InnovationBlueprintItem(**item)  # validasi skema tetap jalan
+            items.append(validated.model_dump())  # tapi disimpan sebagai dict
         except Exception:
-            continue  # lewati item yang tidak valid
+            continue
     return items[:3]
 
 
