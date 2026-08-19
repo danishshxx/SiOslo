@@ -211,6 +211,11 @@ def _parse_llm_response(llm_json: Any, target: str) -> List[dict]:
     if isinstance(llm_json, dict) and "data" in llm_json:
         llm_json = llm_json["data"]
 
+    if isinstance(llm_json, dict):
+        # Model kadang generate satu objek innovation polos tanpa
+        # dibungkus array -- bukan berarti responsnya gagal/kosong.
+        llm_json = [llm_json]
+
     if not isinstance(llm_json, list):
         return []
 
@@ -218,8 +223,8 @@ def _parse_llm_response(llm_json: Any, target: str) -> List[dict]:
     for item in llm_json:
         try:
             item["target_location"] = target
-            validated = InnovationBlueprintItem(**item)  # validasi skema tetap jalan
-            items.append(validated.model_dump())  # tapi disimpan sebagai dict
+            validated = InnovationBlueprintItem(**item)
+            items.append(validated.model_dump())
         except Exception:
             continue
     return items[:3]
