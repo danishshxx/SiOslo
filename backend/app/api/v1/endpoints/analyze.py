@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.sales import SalesReport, SalesItem
-from app.models.market import Demographic, CompetitorPrice   # ← tambahan
+from app.models.market import Demographic, CompetitorPrice
 from app.services.csv_parser import parse_and_validate
-from app.services.correlation_engine import compute_correlation   # ← langsung fungsi asli ch3coo
+from app.services.correlation_engine import compute_correlation
 from app.services.llm_service import generate_innovation_blueprint
 from app.schemas.analysis import (
     AnalysisResponse,
@@ -27,10 +27,6 @@ router = APIRouter(prefix="/analyze")
 
 
 def _safe_int(value, default=0):
-    """int() polos crash kalau value NaN. .get(key, default) TIDAK menolong
-    di sini karena default cuma dipakai kalau key hilang total, bukan kalau
-    nilainya ADA tapi NaN -- dan NaN memang skenario yang sengaja didesain
-    muncul dari csv_parser.py untuk baris data yang rusak."""
     return int(value) if pd.notna(value) else default
 
 

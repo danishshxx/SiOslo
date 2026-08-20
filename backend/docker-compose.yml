@@ -1,6 +1,42 @@
-version: '3.8'
-
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart_commerce_api
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: smart_commerce_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: smart_commerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d smart_commerce"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
   ollama:
     image: ollama/ollama:latest
     container_name: smart_commerce_llm
@@ -14,8 +50,10 @@ services:
     entrypoint: ["/bin/sh", "/models/ollama-entrypoint.sh"]
     networks:
       - backend
+    restart: unless-stopped
 
 volumes:
+  postgres_data:
   ollama_data:
 
 networks:

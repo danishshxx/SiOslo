@@ -1,4 +1,4 @@
-FROM ./sioslo-llama3.gguf
+FROM /models/sioslo-llama3.gguf
 
 TEMPLATE """{{ if .System }}<|start_header_id|>system<|end_header_id|>
 

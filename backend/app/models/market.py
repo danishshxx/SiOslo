@@ -14,11 +14,6 @@ class MarketTrend(Base):
     date = Column(Date)
 
 class Demographic(Base):
-    """Model untuk menyimpan segmen pasar & keyword tren (dipakai correlation_engine.py
-    untuk keyword_overlap_score). Skema disepakati mengikuti ch3coo -- ini yang cocok
-    dengan scope MVP saat ini (Dead-Stock Pivot), bukan skema location-based yang
-    sebelumnya sempat dipakai (itu untuk use case Hyper-Local Expansion, di-roadmap dulu).
-    """
     __tablename__ = "demographics"
 
     id = Column(UUID(as_uuid=True), primary_key=True,
