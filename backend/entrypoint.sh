@@ -7,8 +7,8 @@ until pg_isready -h db -p 5432 -U user; do
   sleep 2
 done
 
-echo "PostgreSQL siap. Jalankan migrasi database..."
-alembic upgrade head
+echo "PostgreSQL siap. Membuat tabel database..."
+python app/scripts/init_db.py
 
 echo "Jalankan server FastAPI..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000

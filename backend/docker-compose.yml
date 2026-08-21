@@ -22,7 +22,7 @@ services:
     container_name: smart_commerce_db
     environment:
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: kembalikesolomantaphuehue
       POSTGRES_DB: smart_commerce
     ports:
       - "5432:5432"
@@ -47,7 +47,6 @@ services:
       - ./models:/models
     environment:
       - OLLAMA_KEEP_ALIVE=24h
-    entrypoint: ["/bin/sh", "/models/ollama-entrypoint.sh"]
     networks:
       - backend
     restart: unless-stopped

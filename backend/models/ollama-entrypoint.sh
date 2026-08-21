@@ -11,7 +11,7 @@ sleep 5
 # Buat model custom dari Modelfile jika ada
 if [ -f /models/Modelfile ]; then
   echo "Membuat model sioslo-model dari Modelfile..."
-  ollama create sioslo-model -f /models/Modelfile
+  ollama create sioslo -f /models/Modelfile
 fi
 
 wait $OLLAMA_PID

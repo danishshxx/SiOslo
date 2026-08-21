@@ -1,0 +1,10 @@
+tanggal,nama_produk,kategori,jumlah_terjual,harga_satuan,total_pendapatan
+2026-08-01,Kopi Susu Aren,Minuman,15,15000,225000
+2026-08-01,Nasi Goreng Seafood,Makanan,5,25000,
+02-08-2026,kopi susu aren,minuman,10,15000,150000
+2026-08-02,Es Teh Kampul,,20,5000,100000
+2026-08-03,Basreng pedas,Snack,12,10000,120000
+2026/08/03,Kopi Susu Aren,Minuman,-2,15000,-30000
+2026-08-04,Roti Bakar Coklat,Makanan,8,12000,96000
+,Es Jeruk,Minuman,5,8000,40000
+2026-08-05,kopi susu aren (promo),Minuman,25,10000,250000

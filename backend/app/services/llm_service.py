@@ -326,7 +326,7 @@ class _LLMService:
 
     def _call_ollama(self, system_prompt: str, user_prompt: str) -> dict:
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=180.0) as client:
             resp = client.post(
                 self.endpoint,
                 json={
