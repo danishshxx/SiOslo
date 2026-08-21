@@ -61,15 +61,25 @@ def analyze_sales(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Gagal membaca file: {str(e)}")
 
-    # 3. Panggil CSV Parser Jay (sinkron)
+        # 3. Panggil CSV Parser Jay (sinkron)
     try:
-        cleaned_df, reliability_score, warnings = parse_and_validate_csv(tmp_path)
-    except ValueError as e:
-        os.unlink(tmp_path)
-        raise HTTPException(status_code=422, detail=f"CSV tidak valid: {str(e)}")
+        # Panggil engine inti langsung, bukan wrapper
+        parser_result = parse_and_validate(tmp_path)
+        if parser_result["status"] != "success":
+            os.unlink(tmp_path)
+            raise HTTPException(status_code=422, detail=parser_result["data_health"]["warning_message"])
+            
+        cleaned_df = parser_result["cleaned_data"]
+        health_data = parser_result["data_health"]
+        reliability_score = health_data["reliability_score"]
+        warnings = [health_data["warning_message"]] if health_data.get("warning_message") else []
+        
+    except HTTPException:
+        raise
     except Exception as e:
         os.unlink(tmp_path)
         raise HTTPException(status_code=500, detail=f"Error tak terduga: {str(e)}")
+
 
     # 4. Simpan data penjualan ke database
     #    Nama kolom di cleaned_df sudah Inggris (product_name, category,
@@ -145,14 +155,15 @@ def analyze_sales(
     trend_reference_source = "static_snapshot"
 
     # 8. Bangun response data_health
+    # 8. Bangun response data_health menggunakan data utuh dari parser
     status_color = "green" if reliability_score >= 80 else "yellow" if reliability_score >= 50 else "red"
 
     data_health = DataHealthMetric(
         reliability_score=reliability_score,
         status_color=status_color,
         warning_message=warnings[0] if warnings else None,
-        score_breakdown=None,
-        issues=None
+        score_breakdown=health_data.get("score_breakdown"),
+        issues=health_data.get("issues")
     )
 
     correlation_metrics = CorrelationMetric(
