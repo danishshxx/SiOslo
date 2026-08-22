@@ -163,7 +163,7 @@ def analyze_sales(
         status_color=status_color,
         warning_message=warnings[0] if warnings else None,
         score_breakdown=health_data.get("score_breakdown"),
-        issues=health_data.get("issues")
+        issues=[DataHealthIssue(**iss) for iss in health_data.get("issues", [])] 
     )
 
     correlation_metrics = CorrelationMetric(
