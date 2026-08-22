@@ -245,3 +245,84 @@ Namun masih ada dua catatan penting:
 | `models/ollama-entrypoint.sh` | Startup Ollama + buat model |
 
 ---
+
+Fase 11: Perbaikan Akhir score_breakdown & issues (Selesai)
+Masalah: Setelah rebuild, response masih menunjukkan score_breakdown dan issues null.
+
+Penyebab: File analyze.py di container masih belum mengkonversi issues menjadi objek DataHealthIssue, sehingga Pydantic menganggap field tidak valid dan mengisi None.
+
+Langkah Perbaikan:
+
+Buka backend/app/api/v1/endpoints/analyze.py di host.
+
+Ubah bagian:
+
+python
+issues=health_data.get("issues")
+menjadi:
+
+python
+issues=[DataHealthIssue(**iss) for iss in health_data.get("issues", [])]
+Simpan file.
+
+Salin file yang sudah diperbaiki ke container (tanpa rebuild full):
+
+powershell
+docker cp app/api/v1/endpoints/analyze.py smart_commerce_api:/app/app/api/v1/endpoints/analyze.py
+docker-compose restart api
+File yang diubah:
+
+backend/app/api/v1/endpoints/analyze.py — konversi issues ke DataHealthIssue.
+
+Hasil:
+
+Response JSON kini menampilkan score_breakdown lengkap:
+
+json
+"score_breakdown": {
+  "base_score": 100,
+  "format_issue_penalty": 0,
+  "duplicate_penalty": 0,
+  "outlier_penalty": 0,
+  "final_score": 100
+}
+issues tampil sebagai [] (bukan null) untuk CSV bersih.
+
+warning_message muncul sesuai parser Jay.
+
+Blueprint inovasi berasal dari LLM murni, bukan fallback.
+
+3 item dihasilkan secara natural (judul, justifikasi, harga, risiko, teks WhatsApp).
+
+Status akhir: Backend SiOslo berfungsi penuh dan siap untuk demo.
+
+3. Status Saat Ini (Update)
+Komponen	Status
+API FastAPI	✅ Berjalan di port 8000
+PostgreSQL	✅ Sehat di port 5432
+Ollama + Model	✅ Berjalan, model sioslo merespons
+Endpoint /analyze	✅ Berhasil mengembalikan respons
+Data pasar di Docker	✅ Sudah diimpor (260 baris)
+keyword_overlap_score	✅ 0.2597 (tidak lagi 0)
+score_breakdown & issues	✅ Muncul dengan benar
+Blueprint inovasi	✅ LLM murni, bukan fallback
+Swagger UI	✅ Akses di http://localhost:8000/docs
+4. Pekerjaan yang Masih Harus Dilakukan (Update)
+Commit & push semua perubahan terakhir.
+
+Siapkan proposal & video presentasi (Proof of Work, video promosi).
+
+5. File yang Paling Penting (Cheatsheet) (Tetap)
+Tidak berubah, file kunci yang perlu diingat:
+
+File	Fungsi
+app/services/llm_service.py	Prompt builder + panggil Ollama
+app/api/v1/endpoints/analyze.py	Endpoint utama
+app/services/csv_parser.py	Parser CSV Jay
+app/services/correlation_engine.py	Korelasi ch3coo
+docker-compose.yml	Orkestrasi Docker
+models/Modelfile	Definisi model fine-tuning
+scripts/import_csv.py	Impor data pasar
+.env	Konfigurasi environment
+entrypoint.sh	Startup backend (init DB + Uvicorn)
+models/ollama-entrypoint.sh	Startup Ollama + buat model
