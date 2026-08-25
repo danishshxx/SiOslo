@@ -94,7 +94,11 @@ def generate_innovation_blueprint(
         return _simulate_blueprint(cleaned_data, correlation_metrics, target_lokasi)
 
     print("[LLM FALLBACK] grounding validation gagal, jatuh ke simulasi")
-    return _simulate_blueprint(cleaned_data, correlation_metrics, target_lokasi)
+    try:
+        return _simulate_blueprint(cleaned_data, correlation_metrics, target_lokasi)
+    except Exception as e:
+        print(f"[SIMULATE BLUEPRINT ERROR] {type(e).__name__}: {e}")
+        raise
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -251,9 +255,20 @@ def _simulate_blueprint(
     for i, prod in enumerate(sorted_prods[:2]):
         name = prod.get("product_name", "Produk")
         overlap = prod.get("keyword_overlap_score", 0)
-        seg = prod.get("matched_segment", "pasar lokal")
-        price = prod.get("user_price", 0) or 20000
-        comp_price = prod.get("avg_competitor_price", price * 1.2)
+        seg = prod.get("matched_segment")
+        seg = seg if seg else "pasar lokal"
+        # PENTING: .get(key, default) TIDAK menolong kalau key ADA tapi
+        # isinya None -- ini terjadi persis di sini karena data lewat
+        # Pydantic model_dump() (PerProductScore), yang selalu menyertakan
+        # field walau nilainya None (beda dari dict biasa yang key-nya
+        # hilang total). Pola bug yang sama sudah ditemukan 3x sebelumnya
+        # di file lain (csv_parser.py, analyze.py, _build_prompt) --
+        # sekarang muncul lagi di sini.
+        price = prod.get("user_price")
+        price = price if price else 20000
+        comp_price = prod.get("avg_competitor_price")
+        if comp_price is None:
+            comp_price = price * 1.2
         id_str = f"inv-{i+1:03d}"
 
         if overlap > 0.5:
