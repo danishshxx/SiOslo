@@ -162,7 +162,7 @@ Follow every step in order. Do not skip any step.
 Open PowerShell (Windows) or Terminal (Mac/Linux) and run:
 
 ```
-git clone -b develop https://github.com/danishshxx/SiOslo.git
+git clone https://github.com/danishshxx/SiOslo.git
 cd SiOslo
 ```
 
@@ -512,7 +512,7 @@ docker compose restart llm
 
 This file was recently added to the repository. Pull the latest changes:
 ```
-git pull origin develop
+git pull origin main
 ```
 Then verify `frontend/client/src/lib/utils.ts` exists. If not, create it with this content:
 ```typescript
@@ -524,7 +524,7 @@ export function cn(...inputs: ClassValue[]) { return clsx(inputs); }
 
 Pull the latest changes from the repository:
 ```
-git pull origin develop
+git pull origin main
 ```
 This issue was fixed in commit `6e061a0`. The `"ignoreDeprecations": "6.0"` line has been removed from `tsconfig.json`.
 
