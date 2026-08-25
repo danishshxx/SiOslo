@@ -41,9 +41,8 @@ function Logo() {
   return <span className="sioslo-logo logo">SiOSLO</span>;
 }
 
-/* ═══════════════════════════════════════════════
-   LANDING NAV (Dynamic Centered Logo & Vertical Dock)
-═══════════════════════════════════════════════ */
+/* Landing page navigation with scroll-aware styling and mobile drawer. */
+
 function LandingNav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -122,9 +121,8 @@ function LandingNav() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   DASHBOARD NAV
-═══════════════════════════════════════════════ */
+/* Dashboard top navigation with active route highlighting and mobile drawer. */
+
 function DashboardNav() {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
@@ -188,12 +186,12 @@ function DashboardNav() {
   );
 }
 
-/* ─── Dashboard shell (Added Fade Transition) ─── */
+/* Dashboard shell wrapper with page transition animation. */
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="dashboard-shell">
       <DashboardNav />
-      {/* Magic trick 1: Smooth page transitions */}
       <main className="dashboard-content animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
         <div className="dash-wrap">{children}</div>
       </main>
@@ -201,9 +199,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   LANDING PAGE  
-═══════════════════════════════════════════════ */
+/* Landing page with hero, features, solutions, and footer sections. */
+
 function Landing() {
   return (
     <div className="landing-page" id="top">
@@ -211,7 +208,7 @@ function Landing() {
       <LandingNav />
 
       <main>
-        {/* ── Hero ── */}
+        {/* Hero section */}
         <section className="l-hero">
           <div className="l-hero-inner">
             <div className="l-eyebrow-pill">AI-Powered Analytics for SMBs</div>
@@ -236,7 +233,7 @@ function Landing() {
           </div>
         </section>
 
-        {/* ── Our Product ── */}
+        {/* Product features section */}
         <section className="l-product" id="product">
           <div className="l-section-inner">
             <div className="l-product-eyebrow">
@@ -271,7 +268,7 @@ function Landing() {
           </div>
         </section>
 
-        {/* ── Solutions ── */}
+        {/* Solutions section */}
         <section className="l-solutions" id="solutions">
           <div className="l-section-inner">
             <div className="l-section-label">✦ Solutions</div>
@@ -289,7 +286,7 @@ function Landing() {
           </div>
         </section>
 
-        {/* ── How It Works ── */}
+        {/* How it works section */}
         <section className="l-how" id="how">
           <div className="l-section-inner">
             <div className="l-section-label">✦ How It Works</div>
@@ -298,7 +295,7 @@ function Landing() {
           </div>
         </section>
 
-        {/* ── Footer ── */}
+        {/* Footer */}
         <footer className="l-footer">
           <Logo />
           <p>© 2026 SiOSLO. AI-Powered Analytics for SMBs.</p>
@@ -313,9 +310,8 @@ function Landing() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   DASHBOARD  
-═══════════════════════════════════════════════ */
+/* Dashboard page with stat cards, recent reports, and quick action links. */
+
 function StatCard({ icon, label, value, foot }: { icon: React.ReactNode; label: string; value: string; foot: string }) {
   return (
     <div className="db-stat-card">
@@ -433,16 +429,15 @@ function Dashboard() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   UPLOAD CSV PAGE (Updated with dynamic LLM loading)
-═══════════════════════════════════════════════ */
+/* CSV upload page with drag-drop zone, target location input, and analysis trigger. */
+
 function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [target, setTarget] = useState("Jakarta");
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [btnSliding, setBtnSliding] = useState(false);
-  const [loadingText, setLoadingText] = useState("Analyzing..."); // Magic trick 2
+  const [loadingText, setLoadingText] = useState("Analyzing...");
   const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
   const [, setLocation] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -477,7 +472,6 @@ function UploadPage() {
         analysis,
       };
       
-      // Magic trick 3: Anti-Duplikat CSV di riwayat
       const filteredHistory = history.filter(h => h.filename !== file.name);
       const next = [item, ...filteredHistory];
       
@@ -488,7 +482,6 @@ function UploadPage() {
       setLocation("/health");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Analysis failed");
-      // Hapus setBtnSliding(false) di sini
     } finally {
       setLoading(false);
     }
@@ -623,9 +616,8 @@ function UploadPage() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   DATA HEALTH DASHBOARD  
-═══════════════════════════════════════════════ */
+/* Data health dashboard reading from real API response fields. */
+
 function CircleGauge({ score }: { score: number }) {
   const r = 52;
   const circ = 2 * Math.PI * r;
@@ -848,9 +840,8 @@ function Health() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   INNOVATION BLUEPRINT / LAB  
-═══════════════════════════════════════════════ */
+/* Innovation blueprint cards rendered from real API response. */
+
 function RealBlueprintCard({ num, item }: { num: number; item: InnovationBlueprintItem }) {
   const [copied, setCopied] = useState(false);
   const [riskOpen, setRiskOpen] = useState(false);
@@ -960,9 +951,8 @@ function Lab() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   ANALYSIS RESULT PAGE
-═══════════════════════════════════════════════ */
+// Analysis result page showing pipeline output with reliability and blueprint summaries.
+
 function AnalysisPage() {
   const item = loadCurrentAnalysis();
   return (
@@ -1012,16 +1002,14 @@ function AnalysisPage() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   SIMULATION PAGE
-═══════════════════════════════════════════════ */
+// Simulation page with three static pricing scenario cards.
+
 function Simulation() {
   const item = loadCurrentAnalysis();
 
   return (
     <Shell>
       <div className="sim-page" style={{ textAlign: "center", paddingBottom: "40px" }}>
-        {/* Header */}
         <div className="lab-model-badge" style={{ marginBottom: "16px" }}>
           <Zap size={13} /> Scenario Analysis
         </div>
@@ -1030,9 +1018,7 @@ function Simulation() {
           Three pricing strategies based on your data — pick the one that fits your goal.
         </p>
 
-        {/* Pricing Cards */}
         <div className="sim-cards-grid">
-          {/* Conservative Card */}
           <div className="sim-card">
             <h3 className="sim-card-title">Conservative</h3>
             <div className="sim-row mt-4">
@@ -1062,7 +1048,6 @@ function Simulation() {
             </div>
           </div>
 
-          {/* Recommended Card (AI) */}
           <div className="sim-card recommended">
             <div className="sim-card-header">
               <h3 className="sim-card-title">Recommended</h3>
@@ -1095,7 +1080,6 @@ function Simulation() {
             </div>
           </div>
 
-          {/* Premium Card */}
           <div className="sim-card">
             <h3 className="sim-card-title">Premium</h3>
             <div className="sim-row mt-4">
@@ -1134,9 +1118,8 @@ function Simulation() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   AI BUDDY PAGE
-═══════════════════════════════════════════════ */
+// AI Buddy chat page (UI only, no backend connection).
+
 function AiBuddy() {
   return (
     <Shell>
@@ -1147,7 +1130,6 @@ function AiBuddy() {
         </p>
 
         <div className="buddy-chat-container">
-          {/* Chat Header */}
           <div className="buddy-chat-header">
             <div className="buddy-avatar">
               <Sparkles size={16} />
@@ -1158,7 +1140,6 @@ function AiBuddy() {
             </div>
           </div>
 
-          {/* Chat Body */}
           <div className="buddy-chat-body">
             <div className="chat-message bot">
               <div className="chat-bubble">
@@ -1168,13 +1149,11 @@ function AiBuddy() {
             </div>
           </div>
 
-          {/* Chat Suggestions */}
           <div className="buddy-suggestions">
             <button className="suggestion-chip">How do I improve below-average items?</button>
             <button className="suggestion-chip">What is the best time to launch a holiday product?</button>
           </div>
 
-          {/* Chat Input */}
           <div className="buddy-input-area">
             <input type="text" placeholder="Type your business question..." className="buddy-input" />
             <button className="buddy-send-btn">
@@ -1187,9 +1166,8 @@ function AiBuddy() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   APP ROUTER
-═══════════════════════════════════════════════ */
+// Root router mapping all page routes.
+
 function App() {
   return (
     <>
