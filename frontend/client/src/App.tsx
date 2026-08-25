@@ -14,6 +14,7 @@ import {
   type AnalysisResponse, type InnovationBlueprintItem
 } from "./lib/sioslo-api";
 
+
 /* ─── persistence helpers ─── */
 type HistoryItem = {
   id: string; filename: string; date: string; rows?: number;
@@ -40,48 +41,83 @@ function Logo() {
 }
 
 /* ═══════════════════════════════════════════════
-   LANDING NAV
+   LANDING NAV (Dynamic Centered Logo & Vertical Dock)
 ═══════════════════════════════════════════════ */
 function LandingNav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
+    const handler = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
   return (
-    <nav className={`landing-nav ${scrolled ? "scrolled" : ""}`}>
-      <div className="landing-nav-inner">
-        <a href="#top"><Logo /></a>
-        <ul className="landing-nav-links">
-          <li><a href="#product"><BarChart3 size={14} />Product</a></li>
-          <li><a href="#solutions"><Sparkles size={14} />Solutions</a></li>
-          <li><a href="#how"><LineChart size={14} />How It Works</a></li>
-          <li><a href="#about"><Shield size={14} />About</a></li>
-        </ul>
-        <div className="landing-nav-right">
-          <Link href="/dashboard" className="nav-signin">Sign In</Link>
-          <Link href="/dashboard" className="nav-get-started">Get Started <ArrowRight size={14} /></Link>
+    <>
+      {/* 🌟 NAVBAR HORIZONTAL UTAMA (Tetap ada, kontennya dinamis) 🌟 */}
+      <div className={`landing-nav-dynamic ${scrolled ? 'is-scrolled' : ''}`}>
+        <div className="nav-container">
+          
+          {/* Logo (Geser dari Kiri ke Tengah secara mulus) */}
+          <div className="nav-logo-wrapper">
+            <a href="#top"><Logo /></a>
+          </div>
+          
+          {/* Menu Tengah (Menghilang saat di-scroll) */}
+          <ul className="nav-center-links dash-nav-pills hidden md:flex" style={{ margin: 0, padding: 0 }}>
+            <li><a href="#product" className="dash-nav-pill"><BarChart3 size={14} />Product</a></li>
+            <li><a href="#solutions" className="dash-nav-pill"><Sparkles size={14} />Solutions</a></li>
+            <li><a href="#how" className="dash-nav-pill"><LineChart size={14} />How It Works</a></li>
+          </ul>
+          
+          {/* Tombol Kanan (Menghilang saat di-scroll) */}
+          <div className="nav-right-actions hidden md:flex">
+            <Link href="/dashboard" className="nav-signin" style={{ padding: '8px 12px' }}>Sign In</Link>
+            <Link href="/dashboard" className="nav-get-started">Get Started <ArrowRight size={14} /></Link>
+          </div>
+          
+          {/* Hamburger Menu Mobile */}
+          <button className="nav-hamburger md:hidden flex" onClick={() => setOpen(!open)} aria-label="Menu" style={{ position: 'absolute', right: '20px' }}>
+            {open ? <X size={20} color="#fff" /> : <Menu size={20} color="#fff" />}
+          </button>
         </div>
-        <button className="nav-hamburger" onClick={() => setOpen(!open)} aria-label="Menu">
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
       </div>
+
+      {/* 🌟 MENU VERTIKAL KIRI (Muncul saat di-scroll) 🌟 */}
+      <div className={`scrolled-left-dock group hidden md:flex ${scrolled ? 'is-visible' : ''}`}>
+        <ul className="dock-links">
+          <li><a href="#product" className="dock-link"><BarChart3/><span className="dock-label">Product</span></a></li>
+          <li><a href="#solutions" className="dock-link"><Sparkles/><span className="dock-label">Solutions</span></a></li>
+          <li><a href="#how" className="dock-link"><LineChart/><span className="dock-label">How It Works</span></a></li>
+        </ul>
+        
+        <div className="dock-divider"></div>
+        
+        <Link href="/dashboard" className="dock-cta">
+          <div className="dock-cta-icon"><ArrowRight size={16} /></div>
+          <span className="dock-label">Get Started</span>
+        </Link>
+      </div>
+
+      {/* Laci Menu Mobile (Tetap sama) */}
       {open && (
-        <div className="landing-mobile-drawer">
-          <a href="#product" onClick={() => setOpen(false)}>Product</a>
-          <a href="#solutions" onClick={() => setOpen(false)}>Solutions</a>
-          <a href="#how" onClick={() => setOpen(false)}>How It Works</a>
-          <a href="#about" onClick={() => setOpen(false)}>About</a>
-          <Link href="/dashboard" onClick={() => setOpen(false)} className="nav-get-started" style={{ textAlign: "center" }}>
+        <div className="dash-mobile-drawer fixed top-20 left-4 right-4 z-[100]" style={{ 
+          display: 'flex', 
+          background: 'rgba(10, 15, 30, 0.95)', 
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '16px'
+        }}>
+          <a href="#product" className="dash-nav-pill" onClick={() => setOpen(false)}>Product</a>
+          <a href="#solutions" className="dash-nav-pill" onClick={() => setOpen(false)}>Solutions</a>
+          <a href="#how" className="dash-nav-pill" onClick={() => setOpen(false)}>How It Works</a>
+          <Link href="/dashboard" onClick={() => setOpen(false)} className="nav-get-started" style={{ textAlign: "center", marginTop: '12px', justifyContent: 'center' }}>
             Get Started
           </Link>
         </div>
       )}
-    </nav>
+    </>
   );
 }
 
@@ -97,6 +133,8 @@ function DashboardNav() {
     { href: "/upload", label: "Upload", icon: Upload },
     { href: "/health", label: "analysis data", icon: LineChart },
     { href: "/lab", label: "Innovation lab", icon: Sparkles },
+    { href: "/simulation", label: "Simulation", icon: Zap },
+    { href: "/buddy", label: "AI Buddy", icon: MessageCircle },
   ];
 
   const isActive = (href: string, label: string) => {
@@ -134,7 +172,12 @@ function DashboardNav() {
       {open && (
         <div className="dash-mobile-drawer">
           {items.map(({ href, label }) => (
-            <Link key={label} href={href} className="dash-nav-pill" onClick={() => setOpen(false)}>
+            <Link 
+              key={label} 
+              href={href} 
+              className="dash-nav-pill" 
+              onClick={() => setOpen(false)}
+            >
               {label}
             </Link>
           ))}
@@ -144,12 +187,13 @@ function DashboardNav() {
   );
 }
 
-/* ─── Dashboard shell ─── */
+/* ─── Dashboard shell (Added Fade Transition) ─── */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="dashboard-shell">
       <DashboardNav />
-      <main className="dashboard-content">
+      {/* Magic trick 1: Smooth page transitions */}
+      <main className="dashboard-content animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
         <div className="dash-wrap">{children}</div>
       </main>
     </div>
@@ -157,7 +201,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 /* ═══════════════════════════════════════════════
-   LANDING PAGE  (Image 1)
+   LANDING PAGE  
 ═══════════════════════════════════════════════ */
 function Landing() {
   return (
@@ -269,7 +313,7 @@ function Landing() {
 }
 
 /* ═══════════════════════════════════════════════
-   DASHBOARD  (Image 2)
+   DASHBOARD  
 ═══════════════════════════════════════════════ */
 function StatCard({ icon, label, value, foot }: { icon: React.ReactNode; label: string; value: string; foot: string }) {
   return (
@@ -389,7 +433,7 @@ function Dashboard() {
 }
 
 /* ═══════════════════════════════════════════════
-   UPLOAD CSV PAGE  (Image 3)
+   UPLOAD CSV PAGE (Updated with dynamic LLM loading)
 ═══════════════════════════════════════════════ */
 function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -397,6 +441,7 @@ function UploadPage() {
   const [drag, setDrag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [btnSliding, setBtnSliding] = useState(false);
+  const [loadingText, setLoadingText] = useState("Analyzing..."); // Magic trick 2
   const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
   const [, setLocation] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -410,9 +455,15 @@ function UploadPage() {
 
   const run = async () => {
     if (!file) return toast.error("Select a CSV file first");
-    setBtnSliding(true);
+    
     await new Promise(r => setTimeout(r, 600));
     setLoading(true);
+
+    setLoadingText("Validating CSV structure...");
+    setTimeout(() => setLoadingText("Correlating with market trends..."), 1500);
+    setTimeout(() => setLoadingText("Running local LLM (sioslo-model)..."), 3500);
+    setTimeout(() => setLoadingText("Generating Innovation Blueprint..."), 7500);
+
     try {
       const analysis = await analyzeCsv(file, target);
       const item: HistoryItem = {
@@ -424,7 +475,11 @@ function UploadPage() {
         status: analysis.status,
         analysis,
       };
-      const next = [item, ...history];
+      
+      // Magic trick 3: Anti-Duplikat CSV di riwayat
+      const filteredHistory = history.filter(h => h.filename !== file.name);
+      const next = [item, ...filteredHistory];
+      
       setHistory(next);
       persistHistory(next);
       saveCurrentAnalysis(item);
@@ -432,7 +487,7 @@ function UploadPage() {
       setLocation("/health");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Analysis failed");
-      setBtnSliding(false);
+      // Hapus setBtnSliding(false) di sini
     } finally {
       setLoading(false);
     }
@@ -530,7 +585,7 @@ function UploadPage() {
               onClick={run}
             >
               {loading ? (
-                <><span className="up-spinner" /> Analyzing…</>
+                <><span className="up-spinner" /> {loadingText}</>
               ) : (
                 <><Zap size={16} /> Analyze Data <ArrowRight size={16} className="up-btn-arrow" /></>
               )}
@@ -568,7 +623,7 @@ function UploadPage() {
 }
 
 /* ═══════════════════════════════════════════════
-   DATA HEALTH DASHBOARD  (Image 4)
+   DATA HEALTH DASHBOARD  
 ═══════════════════════════════════════════════ */
 function CircleGauge({ score }: { score: number }) {
   const r = 52;
@@ -610,13 +665,11 @@ function Health() {
   const issues = health?.issues ?? [];
   const breakdown: any = health?.score_breakdown ?? {};
 
-  // REQUIRED_COLS from csv_parser.py (source of truth)
   const REQUIRED_COLS = [
     "transaction_date", "product_name", "category",
     "qty_sold", "remaining_stock", "unit_price",
   ];
 
-  // Count issues per column
   const issuesByCol: Record<string, number> = {};
   issues.forEach((iss) => {
     if (!iss.column) return;
@@ -666,7 +719,6 @@ function Health() {
         </div>
       </div>
 
-      {/* Score + metrics row */}
       <div className="dh-score-row">
         <div className="dh-score-card">
           <p className="dh-score-label">RELIABILITY SCORE</p>
@@ -710,7 +762,6 @@ function Health() {
         </div>
       </div>
 
-      {/* Score breakdown — transparent formula */}
       {breakdown.final_score !== undefined && (
         <div className="dh-section">
           <div className="dh-section-head">
@@ -738,7 +789,6 @@ function Health() {
         </div>
       )}
 
-      {/* Column status — from real issues */}
       <div className="dh-section">
         <div className="dh-section-head">
           <h2>CSV Column Status</h2>
@@ -759,7 +809,6 @@ function Health() {
         </div>
       </div>
 
-      {/* Correlation metrics from real API */}
       {corr && (
         <div className="dh-section">
           <div className="dh-section-head">
@@ -789,7 +838,6 @@ function Health() {
         </div>
       )}
 
-      {/* CTA */}
       <div className="dh-cta-row">
         <button className="dh-continue-btn" onClick={() => setLocation("/lab")}>
           Continue to Innovation Blueprint <ArrowRight size={16} />
@@ -800,90 +848,8 @@ function Health() {
 }
 
 /* ═══════════════════════════════════════════════
-   INNOVATION BLUEPRINT / LAB  (Image 5)
+   INNOVATION BLUEPRINT / LAB  
 ═══════════════════════════════════════════════ */
-function BlueprintCard({
-  num, category, match, product, uplift, ourPrice, compPrice,
-  keyNumbers, whyFits, riskNote,
-}: {
-  num: number; category: string; match: number; product: string; uplift: string;
-  ourPrice: string; compPrice: string;
-  keyNumbers: { label: string; value: string }[];
-  whyFits: string; riskNote: string;
-}) {
-  const [riskOpen, setRiskOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const copyText = `${product} — ${whyFits}\n\nOur Price: ${ourPrice} vs Competitor: ${compPrice}`;
-  const handleCopy = async () => {
-    try { await navigator.clipboard.writeText(copyText); }
-    catch { /* fallback */ }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success("Copied for WhatsApp!");
-  };
-
-  return (
-    <div className="bp-card">
-      <div className="bp-card-top">
-        <div className="bp-num-badge">{num}</div>
-        <span className="bp-category">{category}</span>
-        <span className="bp-match">Match {match}%</span>
-      </div>
-      <div className="bp-product-row">
-        <span className="bp-product-name">{product}</span>
-        <span className="bp-uplift">{uplift}</span>
-      </div>
-
-      <div className="bp-price-section">
-        <p className="bp-section-label">Price Comparison</p>
-        <div className="bp-price-row">
-          <div className="bp-price-col our">
-            <span className="bp-price-tag">OUR RECOMMENDATION</span>
-            <strong className="bp-price-val">{ourPrice}</strong>
-          </div>
-          <span className="bp-vs">vs</span>
-          <div className="bp-price-col comp">
-            <span className="bp-price-tag">COMPETITOR CEILING</span>
-            <strong className="bp-price-val comp-val">{compPrice}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="bp-key-numbers">
-        <p className="bp-section-label">Key Number</p>
-        {keyNumbers.map(({ label, value }) => (
-          <div className="bp-kn-row" key={label}>
-            <span className="bp-kn-dot">•</span>
-            <span className="bp-kn-label">{label}</span>
-            <span className="bp-kn-value">{value}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="bp-why-fits">
-        <p className="bp-section-label">WHY THIS IDEA FITS</p>
-        <p className="bp-why-body">{whyFits}</p>
-      </div>
-
-      <button className="bp-risk-toggle" onClick={() => setRiskOpen(!riskOpen)}>
-        <AlertTriangle size={13} /> Business Risk Mitigation
-        <ChevronDown size={14} style={{ transform: riskOpen ? "rotate(180deg)" : "", transition: ".2s" }} />
-      </button>
-      {riskOpen && (
-        <div className="bp-risk-body">
-          <p>{riskNote}</p>
-        </div>
-      )}
-
-      <button className="bp-whatsapp-btn" onClick={handleCopy}>
-        <MessageCircle size={16} /> {copied ? "Copied!" : "Copy for WhatsApp"} <Copy size={14} />
-      </button>
-    </div>
-  );
-}
-
-/* Real blueprint card — uses all fields from real API response */
 function RealBlueprintCard({ num, item }: { num: number; item: InnovationBlueprintItem }) {
   const [copied, setCopied] = useState(false);
   const [riskOpen, setRiskOpen] = useState(false);
@@ -900,19 +866,16 @@ function RealBlueprintCard({ num, item }: { num: number; item: InnovationBluepri
 
   return (
     <div className="bp-card">
-      {/* Header */}
       <div className="bp-card-top">
         <div className="bp-num-badge">{num}</div>
         <span className="bp-category">Innovation Blueprint</span>
         <span className="bp-match">{item.target_location}</span>
       </div>
 
-      {/* Title */}
       <div className="bp-product-row">
         <span className="bp-product-name">{item.title}</span>
       </div>
 
-      {/* Price comparison — from real recommended_price + competitor_price_ceiling */}
       <div className="bp-price-section">
         <p className="bp-section-label">Price Comparison</p>
         <div className="bp-price-row">
@@ -928,13 +891,11 @@ function RealBlueprintCard({ num, item }: { num: number; item: InnovationBluepri
         </div>
       </div>
 
-      {/* Justification */}
       <div className="bp-why-fits">
         <p className="bp-section-label">WHY THIS IDEA FITS</p>
         <p className="bp-why-body">{item.justification}</p>
       </div>
 
-      {/* Risk factors — collapsible */}
       {item.risk_factors?.length > 0 && (
         <>
           <button className="bp-risk-toggle" onClick={() => setRiskOpen(!riskOpen)}>
@@ -951,14 +912,12 @@ function RealBlueprintCard({ num, item }: { num: number; item: InnovationBluepri
         </>
       )}
 
-      {/* WhatsApp copy — uses pre-written text from backend */}
       <button className="bp-whatsapp-btn" onClick={handleCopy}>
         <MessageCircle size={16} /> {copied ? "Copied!" : "Copy for WhatsApp"} <Copy size={14} />
       </button>
     </div>
   );
 }
-
 
 function Lab() {
   const item = loadCurrentAnalysis();
@@ -967,7 +926,6 @@ function Lab() {
   return (
     <Shell>
       <div className="lab-page">
-        {/* Header */}
         <div className="lab-header">
           <div className="lab-model-badge">
             <Sparkles size={13} /> Innovation Lab — sioslo-model · Local AI
@@ -980,7 +938,6 @@ function Lab() {
           </p>
         </div>
 
-        {/* Blueprint cards — real data from API */}
         {blueprints.length > 0 ? (
           <div className="lab-cards-grid">
             {blueprints.map((bp, i) => (
@@ -1055,6 +1012,181 @@ function AnalysisPage() {
 }
 
 /* ═══════════════════════════════════════════════
+   SIMULATION PAGE
+═══════════════════════════════════════════════ */
+function Simulation() {
+  const item = loadCurrentAnalysis();
+
+  return (
+    <Shell>
+      <div className="sim-page" style={{ textAlign: "center", paddingBottom: "40px" }}>
+        {/* Header */}
+        <div className="lab-model-badge" style={{ marginBottom: "16px" }}>
+          <Zap size={13} /> Scenario Analysis
+        </div>
+        <h1 className="lab-title">Pricing Scenarios</h1>
+        <p className="lab-sub" style={{ marginBottom: "40px" }}>
+          Three pricing strategies based on your data — pick the one that fits your goal.
+        </p>
+
+        {/* Pricing Cards */}
+        <div className="sim-cards-grid">
+          {/* Conservative Card */}
+          <div className="sim-card">
+            <h3 className="sim-card-title">Conservative</h3>
+            <div className="sim-row mt-4">
+              <span className="sim-label">Sell Price</span>
+              <span className="sim-val">Rp 13.500</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">COGS</span>
+              <span className="sim-val">Rp 10.000</span>
+            </div>
+            <div className="sim-row mb-4">
+              <span className="sim-label">Qty</span>
+              <span className="sim-val">100 pcs</span>
+            </div>
+            <div className="sim-divider" />
+            <div className="sim-row mt-4">
+              <span className="sim-label">Gross Margin</span>
+              <span className="sim-val highlight">25.9%</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">Revenue</span>
+              <span className="sim-val">Rp 1.350.000</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">Est. Profit</span>
+              <span className="sim-val highlight-profit">Rp 350.000</span>
+            </div>
+          </div>
+
+          {/* Recommended Card (AI) */}
+          <div className="sim-card recommended">
+            <div className="sim-card-header">
+              <h3 className="sim-card-title">Recommended</h3>
+              <span className="sim-ai-badge">AI Pick</span>
+            </div>
+            <div className="sim-row mt-4">
+              <span className="sim-label">Sell Price</span>
+              <span className="sim-val">Rp 15.800</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">COGS</span>
+              <span className="sim-val">Rp 10.000</span>
+            </div>
+            <div className="sim-row mb-4">
+              <span className="sim-label">Qty</span>
+              <span className="sim-val">90 pcs</span>
+            </div>
+            <div className="sim-divider" />
+            <div className="sim-row mt-4">
+              <span className="sim-label">Gross Margin</span>
+              <span className="sim-val highlight">36.7%</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">Revenue</span>
+              <span className="sim-val">Rp 1.422.000</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">Est. Profit</span>
+              <span className="sim-val highlight-profit">Rp 522.000</span>
+            </div>
+          </div>
+
+          {/* Premium Card */}
+          <div className="sim-card">
+            <h3 className="sim-card-title">Premium</h3>
+            <div className="sim-row mt-4">
+              <span className="sim-label">Sell Price</span>
+              <span className="sim-val">Rp 18.000</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">COGS</span>
+              <span className="sim-val">Rp 10.000</span>
+            </div>
+            <div className="sim-row mb-4">
+              <span className="sim-label">Qty</span>
+              <span className="sim-val">70 pcs</span>
+            </div>
+            <div className="sim-divider" />
+            <div className="sim-row mt-4">
+              <span className="sim-label">Gross Margin</span>
+              <span className="sim-val highlight">44.4%</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">Revenue</span>
+              <span className="sim-val">Rp 1.260.000</span>
+            </div>
+            <div className="sim-row">
+              <span className="sim-label">Est. Profit</span>
+              <span className="sim-val highlight-profit">Rp 560.000</span>
+            </div>
+          </div>
+        </div>
+        
+        <p className="sim-footer-note mt-8">
+          Based on your historical COGS average — JABODETABEK market rates Q2 2026
+        </p>
+      </div>
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   AI BUDDY PAGE
+═══════════════════════════════════════════════ */
+function AiBuddy() {
+  return (
+    <Shell>
+      <div className="buddy-page" style={{ textAlign: "center" }}>
+        <h1 className="lab-title">AI Mentor Chat</h1>
+        <p className="lab-sub" style={{ marginBottom: "32px" }}>
+          Ask anything about your business strategy, or product ideas — MAC Buddy is ready to answer!
+        </p>
+
+        <div className="buddy-chat-container">
+          {/* Chat Header */}
+          <div className="buddy-chat-header">
+            <div className="buddy-avatar">
+              <Sparkles size={16} />
+            </div>
+            <div className="buddy-header-text">
+              <h4>MAC Buddy</h4>
+              <span className="status-online"><span className="dot"></span> Online · Ready to help your business</span>
+            </div>
+          </div>
+
+          {/* Chat Body */}
+          <div className="buddy-chat-body">
+            <div className="chat-message bot">
+              <div className="chat-bubble">
+                <p><strong>Hi! I'm MAC Buddy, your business AI Mentor ✨</strong></p>
+                <p>I'm here to help you think through strategy and scale your F&B business. I've analyzed your latest data — what would you like to discuss first?</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Suggestions */}
+          <div className="buddy-suggestions">
+            <button className="suggestion-chip">How do I improve below-average items?</button>
+            <button className="suggestion-chip">What is the best time to launch a holiday product?</button>
+          </div>
+
+          {/* Chat Input */}
+          <div className="buddy-input-area">
+            <input type="text" placeholder="Type your business question..." className="buddy-input" />
+            <button className="buddy-send-btn">
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
    APP ROUTER
 ═══════════════════════════════════════════════ */
 function App() {
@@ -1068,6 +1200,8 @@ function App() {
         <Route path="/health" component={Health} />
         <Route path="/lab" component={Lab} />
         <Route path="/analysis" component={AnalysisPage} />
+        <Route path="/simulation" component={Simulation} />
+        <Route path="/buddy" component={AiBuddy} />      
         <Route component={Landing} />
       </Switch>
     </>

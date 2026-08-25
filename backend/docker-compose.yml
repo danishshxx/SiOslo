@@ -51,6 +51,19 @@ services:
       - backend
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: smart_commerce_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   ollama_data:

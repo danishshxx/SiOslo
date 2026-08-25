@@ -399,9 +399,10 @@ input { font: inherit; }
 
 /* ── Solutions ── */
 .l-solutions {
-  position: relative; z-index: 1;
+  position: relative; 
+  z-index: 1;
   padding: clamp(60px, 8vw, 100px) 0;
-  background: linear-gradient(160deg, rgba(9,14,26,.9), rgba(17,10,41,.9));
+  /* background-nya dihapus biar gradasi ungu/biru dari atas bisa ngalir mulus ke bawah */
 }
 .l-section-label {
   display: inline-flex;
@@ -973,11 +974,12 @@ input { font: inherit; }
 .up-btn-arrow { transition: transform .2s; }
 .up-analyze-btn:hover .up-btn-arrow { transform: translateX(4px); }
 .up-spinner {
-  width: 16px; height: 16px;
+  width: 16px; 
+  height: 16px;
   border: 2px solid rgba(255,255,255,.3);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 1.5s linear infinite;
   display: inline-block;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -1338,7 +1340,6 @@ input { font: inherit; }
 .bp-kn-label { color: #8B82A0; flex: 1; }
 .bp-kn-value { color: #fff; font-weight: 600; text-align: right; }
 
-.bp-why-fits {}
 .bp-why-body { font-size: 12.5px; line-height: 1.65; color: #9AA8BD; }
 
 .bp-risk-toggle {
@@ -1458,3 +1459,406 @@ input { font: inherit; }
     scroll-behavior: auto !important;
   }
 }
+
+/* 🌟 ======================================================= 🌟
+   CINEMATIC & GLASSMORPHISM OVERRIDES (COMPFEST FINAL POLISH)
+   🌟 ======================================================= 🌟 */
+
+/* 1. ULTIMATE GLASSMORPHISM UNTUK SEMUA KARTU */
+.db-stat-card, .up-card, .dh-score-row, .dh-section, .bp-card, .ar-idea, .db-report-row, .db-quick-card {
+  /* Bikin background lebih transparan biar blur-nya kelihatan */
+  background: rgba(16, 21, 38, 0.45) !important;
+  
+  /* Efek Kaca (Glass) */
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  
+  /* Border putih transparan ala Apple/Vercel */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  
+  /* Inner shadow buat kesan 3D (pantulan cahaya di ujung kaca) */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 1px 1px 0px rgba(255, 255, 255, 0.05) !important;
+  
+  /* Transisi super smooth */
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s, box-shadow 0.3s !important;
+}
+
+/* CINEMATIC HOVER LIFT (Melayang saat di-hover) */
+.db-stat-card:hover, .up-card:hover, .bp-card:hover, .db-report-row:hover, .db-quick-card:hover {
+  transform: translateY(-6px) scale(1.01) !important;
+  border-color: rgba(164, 91, 255, 0.5) !important;
+  box-shadow: 0 15px 40px 0 rgba(123, 63, 232, 0.25), inset 1px 1px 0px rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 2. CINEMATIC ENTRANCE ANIMATION (Efek Scroll/Masuk) */
+@keyframes cinematicReveal {
+  0% { opacity: 0; transform: translateY(40px) scale(0.98); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+/* Bikin elemen muncul bergantian (Staggered) */
+.db-stats-grid { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+.db-reports { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both; }
+.db-quick-grid { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s both; }
+.up-card, .dh-score-row { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+.dh-section { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both; }
+.lab-cards-grid .bp-card:nth-child(1) { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+.lab-cards-grid .bp-card:nth-child(2) { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s both; }
+.lab-cards-grid .bp-card:nth-child(3) { animation: cinematicReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s both; }
+
+/* 3. GLOWING AMBIENT ORBS (Cahaya AI melayang di Background) */
+.dashboard-shell::before {
+  content: "";
+  position: fixed;
+  top: -10%; left: -10%; width: 50vw; height: 50vw;
+  background: radial-gradient(circle, rgba(123, 63, 232, 0.12) 0%, transparent 60%);
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  animation: orbFloat 10s infinite alternate ease-in-out;
+}
+
+.dashboard-shell::after {
+  content: "";
+  position: fixed;
+  bottom: -15%; right: -10%; width: 50vw; height: 50vw;
+  background: radial-gradient(circle, rgba(8, 197, 255, 0.08) 0%, transparent 60%);
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  animation: orbFloat 12s infinite alternate-reverse ease-in-out;
+}
+
+@keyframes orbFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(40px, -40px) scale(1.1); }
+}
+
+/* ═══════════════════════════════════════════════
+   SIMULATION PAGE
+═══════════════════════════════════════════════ */
+.sim-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.sim-card {
+  background: rgba(10, 15, 30, 0.9);
+  border: 1px solid rgba(81, 71, 200, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.sim-card.recommended {
+  border-color: rgba(164, 91, 255, 0.8);
+  background: linear-gradient(180deg, rgba(164,91,255,0.05) 0%, rgba(10,15,30,0.9) 100%);
+  transform: translateY(-8px);
+  box-shadow: 0 10px 30px rgba(123, 63, 232, 0.15);
+}
+.sim-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sim-card-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.sim-ai-badge {
+  background: linear-gradient(135deg, #7B3FE8, #5147C8);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sim-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+.sim-label { color: #8B82A0; }
+.sim-val { color: #fff; font-weight: 500; }
+.sim-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+}
+.highlight { color: var(--teal); font-weight: 700; }
+.highlight-profit { color: var(--violet-bright); font-weight: 700; font-size: 16px; }
+.sim-footer-note {
+  font-size: 12px;
+  color: #5D6480;
+  font-family: var(--font-mono);
+}
+
+/* ═══════════════════════════════════════════════
+   AI BUDDY PAGE
+═══════════════════════════════════════════════ */
+.buddy-chat-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: rgba(14, 20, 36, 0.85);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+}
+.buddy-chat-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0,0,0,0.2);
+}
+.buddy-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7B3FE8, #5147C8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.buddy-header-text { text-align: left; }
+.buddy-header-text h4 { color: #fff; font-size: 15px; margin-bottom: 2px; }
+.status-online { color: #8B82A0; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.status-online .dot { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; }
+
+.buddy-chat-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.chat-message {
+  display: flex;
+  margin-bottom: 16px;
+}
+.chat-message.bot { justify-content: flex-start; }
+.chat-bubble {
+  background: rgba(81, 71, 200, 0.15);
+  border: 1px solid rgba(81, 71, 200, 0.3);
+  padding: 14px 18px;
+  border-radius: 14px;
+  border-top-left-radius: 4px;
+  color: #E4E8F8;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 85%;
+  text-align: left;
+}
+.chat-bubble p { margin-bottom: 8px; }
+.chat-bubble p:last-child { margin-bottom: 0; }
+
+.buddy-suggestions {
+  padding: 0 20px 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+.suggestion-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #C4B5FD;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.suggestion-chip:hover { background: rgba(255, 255, 255, 0.1); }
+
+.buddy-input-area {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  gap: 10px;
+  background: rgba(0,0,0,0.2);
+}
+.buddy-input {
+  flex: 1;
+  background: rgba(10, 15, 30, 0.6);
+  border: 1px solid rgba(81, 71, 200, 0.4);
+  border-radius: 999px;
+  padding: 10px 20px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+.buddy-input:focus { border-color: var(--violet-bright); }
+.buddy-send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--violet-bright);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.2s;
+}
+.buddy-send-btn:hover { filter: brightness(1.1); }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sim-cards-grid { grid-template-columns: 1fr; }
+  .sim-card.recommended { transform: translateY(0); }
+}
+
+/* 🌟 ======================================================= 🌟
+   CINE-NAV SCROLLED EFFECTS (Dynamic Center Logo & Left Dock)
+   🌟 ======================================================= 🌟 */
+
+/* PEMBUNGKUS NAVBAR HORIZONTAL */
+.landing-nav-dynamic {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  padding: 24px 24px 0;
+  transition: padding 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-nav-dynamic.is-scrolled {
+  padding: 12px 24px 0;
+}
+
+/* KOTAK NAVBAR (PEKAT SAAT SCROLL) */
+.nav-container {
+  max-width: 1320px; margin: 0 auto; height: 60px;
+  background: rgba(10, 15, 30, 0.4);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-nav-dynamic.is-scrolled .nav-container {
+  background: rgba(6, 10, 24, 0.95) !important; /* DIBIKIN PEKAT 95% */
+  border-color: rgba(255,255,255,0.15);
+  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.8);
+}
+
+/* LOGO GESER KE TENGAH */
+.nav-logo-wrapper {
+  position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
+  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); 
+}
+.landing-nav-dynamic.is-scrolled .nav-logo-wrapper {
+  left: 50%; transform: translate(-50%, -50%);
+}
+
+/* MENU TENGAH & KANAN NGE-FADE OUT */
+.nav-center-links, .nav-right-actions {
+  transition: all 0.4s ease; opacity: 1; transform: translateY(0);
+}
+.nav-right-actions {
+  position: absolute; right: 16px; display: flex; align-items: center; gap: 12px;
+}
+.landing-nav-dynamic.is-scrolled .nav-center-links,
+.landing-nav-dynamic.is-scrolled .nav-right-actions {
+  opacity: 0; transform: translateY(-10px); pointer-events: none;
+}
+
+/* MENU VERTIKAL MELAYANG DI KIRI (DOCK) */
+.scrolled-left-dock {
+  position: fixed; top: 50%; left: 24px; z-index: 99;
+  transform: translateY(-50%) translateX(-150%);
+  background: rgba(6, 10, 24, 0.8);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px; 
+  padding: 16px; width: 54px;
+  flex-direction: column; gap: 20px;
+  opacity: 0; overflow: hidden;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 1px 1px 0px rgba(255, 255, 255, 0.05);
+}
+.scrolled-left-dock.is-visible {
+  opacity: 1; transform: translateY(-50%) translateX(0);
+}
+.scrolled-left-dock:hover {
+  width: 180px; 
+  background: rgba(10, 15, 30, 0.95);
+  border-color: rgba(164, 91, 255, 0.5);
+  box-shadow: 0 15px 40px rgba(123, 63, 232, 0.3), inset 1px 1px 0px rgba(255, 255, 255, 0.15);
+}
+.dock-links { display: flex; flex-direction: column; gap: 24px; margin: 0; padding: 0; list-style: none; }
+.dock-link {
+  display: flex; align-items: center; gap: 16px; color: rgba(255,255,255,0.5);
+  font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: color 0.2s;
+}
+.dock-link:hover { color: #fff; }
+.dock-link svg { width: 18px; height: 18px; flex-shrink: 0; margin-left: 2px; }
+.dock-label { 
+  opacity: 0; transform: translateX(-15px); 
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+}
+.scrolled-left-dock:hover .dock-label { opacity: 1; transform: translateX(0); }
+.dock-divider { height: 1px; width: 100%; background: rgba(255,255,255,0.1); margin: -4px 0; }
+.dock-cta {
+  display: flex; align-items: center; gap: 14px;
+  color: #fff; background: linear-gradient(135deg, #7B3FE8, #5147C8);
+  border-radius: 50px; width: 32px; height: 32px; overflow: hidden;
+  justify-content: flex-start; padding-left: 7px;
+  white-space: nowrap; font-size: 13px; font-weight: 700; 
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); margin-left: -5px;
+}
+.scrolled-left-dock:hover .dock-cta { width: 100%; padding-left: 16px; margin-left: 0; }
+
+/* 🌟 ======================================================= 🌟
+   NEW REDESIGN STYLES (MATCHING FIGMA 100%)
+   🌟 ======================================================= 🌟 */
+
+/* About Section Orb & Cards */
+.about-glow-orb {
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #C084FC, #7E22CE 40%, #0F172A 80%);
+  box-shadow: 0 0 80px rgba(168, 85, 247, 0.4), inset -20px -20px 40px rgba(0,0,0,0.5);
+  animation: float 6s ease-in-out infinite;
+  position: relative;
+}
+.about-glow-orb::after {
+  content: "";
+  position: absolute; top: 40%; left: 10%; right: 10%; height: 25%;
+  background: #000; border-radius: 50%; filter: blur(10px); opacity: 0.6;
+}
+.abt-float-card {
+  position: absolute;
+  background: rgba(10, 17, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 10px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  animation: float-offset 5s ease-in-out infinite alternate;
+}
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+@keyframes float-offset { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(-10px) translateX(5px); } }
+
+/* Shared New Pills (For Grid 6) */
+.n-pill {
+  font-size: 10px; font-weight: 600; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid transparent;
+}
+.n-pill.blue { background: rgba(59,130,246,0.1); color: #60A5FA; border-color: rgba(59,130,246,0.2); }
+.n-pill.purple { background: rgba(168,85,247,0.1); color: #C084FC; border-color: rgba(168,85,247,0.2); }
+.n-pill.teal { background: rgba(20,184,166,0.1); color: #2DD4BF; border-color: rgba(20,184,166,0.2); }
+.n-pill.orange { background: rgba(249,115,22,0.1); color: #FB923C; border-color: rgba(249,115,22,0.2); }
+.n-pill.blue2 { background: rgba(37,99,235,0.1); color: #60A5FA; border-color: rgba(37,99,235,0.2); }
