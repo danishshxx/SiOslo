@@ -1,0 +1,138 @@
+category,product_name,competitor_name,price,source
+Minuman,Kopi Susu Aren,Toko Kompetitor 672,32216,synthetic
+Minuman,Kopi Susu Aren,Toko Kompetitor 304,27124,synthetic
+Minuman,Kopi Susu Aren,Toko Kompetitor 932,11171,synthetic
+Minuman,Es Teh Kampul,Toko Kompetitor 100,16944,synthetic
+Minuman,Es Teh Kampul,Toko Kompetitor 828,30770,synthetic
+Minuman,Es Teh Kampul,Toko Kompetitor 610,32869,synthetic
+Minuman,Es Teh Kampul,Toko Kompetitor 888,13767,synthetic
+Minuman,Boba Brown Sugar,Toko Kompetitor 330,17081,synthetic
+Minuman,Boba Brown Sugar,Toko Kompetitor 793,8929,synthetic
+Minuman,Boba Brown Sugar,Toko Kompetitor 322,30914,synthetic
+Minuman,Boba Brown Sugar,Toko Kompetitor 365,8086,synthetic
+Minuman,Boba Brown Sugar,Toko Kompetitor 889,23384,synthetic
+Minuman,Matcha Latte,Toko Kompetitor 574,21926,synthetic
+Minuman,Matcha Latte,Toko Kompetitor 350,15383,synthetic
+Minuman,Matcha Latte,Toko Kompetitor 165,28218,synthetic
+Minuman,Wedang Jahe,Toko Kompetitor 898,12989,synthetic
+Minuman,Wedang Jahe,Toko Kompetitor 222,14511,synthetic
+Minuman,Wedang Jahe,Toko Kompetitor 774,20944,synthetic
+Minuman,Wedang Jahe,Toko Kompetitor 839,31553,synthetic
+Minuman,Wedang Jahe,Toko Kompetitor 574,28350,synthetic
+Minuman,Jus Alpukat,Toko Kompetitor 340,23428,synthetic
+Minuman,Jus Alpukat,Toko Kompetitor 736,20750,synthetic
+Minuman,Jus Alpukat,Toko Kompetitor 646,16656,synthetic
+Kecantikan,Serum Vitamin C,Toko Kompetitor 835,102269,synthetic
+Kecantikan,Serum Vitamin C,Toko Kompetitor 129,92594,synthetic
+Kecantikan,Serum Vitamin C,Toko Kompetitor 111,84329,synthetic
+Kecantikan,Serum Vitamin C,Toko Kompetitor 174,212253,synthetic
+Kecantikan,Lipstik Matte,Toko Kompetitor 782,136912,synthetic
+Kecantikan,Lipstik Matte,Toko Kompetitor 869,116436,synthetic
+Kecantikan,Lipstik Matte,Toko Kompetitor 610,209304,synthetic
+Kecantikan,Lipstik Matte,Toko Kompetitor 868,234640,synthetic
+Kecantikan,Lipstik Matte,Toko Kompetitor 956,230295,synthetic
+Kecantikan,Bedak Tabur,Toko Kompetitor 339,179728,synthetic
+Kecantikan,Bedak Tabur,Toko Kompetitor 932,193993,synthetic
+Kecantikan,Bedak Tabur,Toko Kompetitor 526,86776,synthetic
+Kecantikan,Bedak Tabur,Toko Kompetitor 742,195417,synthetic
+Kecantikan,Parfum Eau de Toilette,Toko Kompetitor 307,186919,synthetic
+Kecantikan,Parfum Eau de Toilette,Toko Kompetitor 382,146911,synthetic
+Kecantikan,Parfum Eau de Toilette,Toko Kompetitor 617,183368,synthetic
+Kecantikan,Sabun Wajah Tea Tree,Toko Kompetitor 525,210867,synthetic
+Kecantikan,Sabun Wajah Tea Tree,Toko Kompetitor 866,157228,synthetic
+Kecantikan,Sabun Wajah Tea Tree,Toko Kompetitor 928,228429,synthetic
+Kecantikan,Sabun Wajah Tea Tree,Toko Kompetitor 793,193250,synthetic
+Fashion,Kaos Oversize Polos,Toko Kompetitor 755,355991,synthetic
+Fashion,Kaos Oversize Polos,Toko Kompetitor 107,205827,synthetic
+Fashion,Kaos Oversize Polos,Toko Kompetitor 521,159054,synthetic
+Fashion,Kaos Oversize Polos,Toko Kompetitor 698,161346,synthetic
+Fashion,Kemeja Flanel,Toko Kompetitor 703,148287,synthetic
+Fashion,Kemeja Flanel,Toko Kompetitor 833,212607,synthetic
+Fashion,Kemeja Flanel,Toko Kompetitor 819,219730,synthetic
+Fashion,Kemeja Flanel,Toko Kompetitor 781,153956,synthetic
+Fashion,Hijab Voal Premium,Toko Kompetitor 801,352947,synthetic
+Fashion,Hijab Voal Premium,Toko Kompetitor 722,283398,synthetic
+Fashion,Hijab Voal Premium,Toko Kompetitor 800,247423,synthetic
+Fashion,Sepatu Sneakers,Toko Kompetitor 679,201251,synthetic
+Fashion,Sepatu Sneakers,Toko Kompetitor 240,192619,synthetic
+Fashion,Sepatu Sneakers,Toko Kompetitor 609,229290,synthetic
+Fashion,Sepatu Sneakers,Toko Kompetitor 808,325844,synthetic
+Fashion,Tas Ransel,Toko Kompetitor 919,218296,synthetic
+Fashion,Tas Ransel,Toko Kompetitor 761,113488,synthetic
+Fashion,Tas Ransel,Toko Kompetitor 696,257442,synthetic
+Fashion,Tas Ransel,Toko Kompetitor 414,150519,synthetic
+Fashion,Tas Ransel,Toko Kompetitor 851,94993,synthetic
+Fashion,Celana Cargo,Toko Kompetitor 443,102295,synthetic
+Fashion,Celana Cargo,Toko Kompetitor 539,255917,synthetic
+Fashion,Celana Cargo,Toko Kompetitor 431,85743,synthetic
+Makanan Berat,Ayam Geprek,Toko Kompetitor 573,18910,synthetic
+Makanan Berat,Ayam Geprek,Toko Kompetitor 101,26775,synthetic
+Makanan Berat,Ayam Geprek,Toko Kompetitor 637,31391,synthetic
+Makanan Berat,Ayam Geprek,Toko Kompetitor 938,40284,synthetic
+Makanan Berat,Ayam Geprek,Toko Kompetitor 363,35859,synthetic
+Makanan Berat,Nasi Goreng Seafood,Toko Kompetitor 908,32425,synthetic
+Makanan Berat,Nasi Goreng Seafood,Toko Kompetitor 334,39641,synthetic
+Makanan Berat,Nasi Goreng Seafood,Toko Kompetitor 729,30979,synthetic
+Makanan Berat,Nasi Goreng Seafood,Toko Kompetitor 858,42958,synthetic
+Makanan Berat,Nasi Goreng Seafood,Toko Kompetitor 870,35987,synthetic
+Makanan Berat,Mie Gacoan,Toko Kompetitor 675,40895,synthetic
+Makanan Berat,Mie Gacoan,Toko Kompetitor 519,25180,synthetic
+Makanan Berat,Mie Gacoan,Toko Kompetitor 935,37796,synthetic
+Makanan Berat,Sushi Roll,Toko Kompetitor 881,27844,synthetic
+Makanan Berat,Sushi Roll,Toko Kompetitor 153,37628,synthetic
+Makanan Berat,Sushi Roll,Toko Kompetitor 211,40575,synthetic
+Makanan Berat,Burger Wagyu,Toko Kompetitor 838,32613,synthetic
+Makanan Berat,Burger Wagyu,Toko Kompetitor 531,47682,synthetic
+Makanan Berat,Burger Wagyu,Toko Kompetitor 704,44903,synthetic
+Makanan Berat,Burger Wagyu,Toko Kompetitor 343,49823,synthetic
+Makanan Berat,Burger Wagyu,Toko Kompetitor 839,21640,synthetic
+Makanan Berat,Soto Betawi,Toko Kompetitor 155,42944,synthetic
+Makanan Berat,Soto Betawi,Toko Kompetitor 417,35308,synthetic
+Makanan Berat,Soto Betawi,Toko Kompetitor 483,28278,synthetic
+Makanan Ringan,Keripik Singkong Pedas,Toko Kompetitor 378,22341,synthetic
+Makanan Ringan,Keripik Singkong Pedas,Toko Kompetitor 623,15282,synthetic
+Makanan Ringan,Keripik Singkong Pedas,Toko Kompetitor 244,10562,synthetic
+Makanan Ringan,Keripik Singkong Pedas,Toko Kompetitor 769,22653,synthetic
+Makanan Ringan,Keripik Singkong Pedas,Toko Kompetitor 291,10462,synthetic
+Makanan Ringan,Basreng,Toko Kompetitor 189,10915,synthetic
+Makanan Ringan,Basreng,Toko Kompetitor 564,19839,synthetic
+Makanan Ringan,Basreng,Toko Kompetitor 247,19367,synthetic
+Makanan Ringan,Basreng,Toko Kompetitor 287,10204,synthetic
+Makanan Ringan,Basreng,Toko Kompetitor 739,11902,synthetic
+Makanan Ringan,Makaroni Bantet,Toko Kompetitor 749,23678,synthetic
+Makanan Ringan,Makaroni Bantet,Toko Kompetitor 500,24882,synthetic
+Makanan Ringan,Makaroni Bantet,Toko Kompetitor 212,19926,synthetic
+Makanan Ringan,Makaroni Bantet,Toko Kompetitor 119,5595,synthetic
+Makanan Ringan,Roti Bakar Cokelat,Toko Kompetitor 205,20170,synthetic
+Makanan Ringan,Roti Bakar Cokelat,Toko Kompetitor 265,18702,synthetic
+Makanan Ringan,Roti Bakar Cokelat,Toko Kompetitor 460,18185,synthetic
+Makanan Ringan,Kue Cubit,Toko Kompetitor 154,8121,synthetic
+Makanan Ringan,Kue Cubit,Toko Kompetitor 618,7600,synthetic
+Makanan Ringan,Kue Cubit,Toko Kompetitor 805,17763,synthetic
+Makanan Ringan,Kue Cubit,Toko Kompetitor 663,22957,synthetic
+Makanan Ringan,Cireng Isi,Toko Kompetitor 330,21013,synthetic
+Makanan Ringan,Cireng Isi,Toko Kompetitor 475,10331,synthetic
+Makanan Ringan,Cireng Isi,Toko Kompetitor 275,16901,synthetic
+Aksesoris,Jam Tangan Minimalis,Toko Kompetitor 863,72101,synthetic
+Aksesoris,Jam Tangan Minimalis,Toko Kompetitor 773,149228,synthetic
+Aksesoris,Jam Tangan Minimalis,Toko Kompetitor 450,169024,synthetic
+Aksesoris,Kalung Titanium,Toko Kompetitor 741,172538,synthetic
+Aksesoris,Kalung Titanium,Toko Kompetitor 599,69653,synthetic
+Aksesoris,Kalung Titanium,Toko Kompetitor 134,113333,synthetic
+Aksesoris,Gelang Etnik,Toko Kompetitor 125,196210,synthetic
+Aksesoris,Gelang Etnik,Toko Kompetitor 899,278985,synthetic
+Aksesoris,Gelang Etnik,Toko Kompetitor 653,97303,synthetic
+Aksesoris,Gelang Etnik,Toko Kompetitor 909,278655,synthetic
+Aksesoris,Gelang Etnik,Toko Kompetitor 870,112350,synthetic
+Aksesoris,Dompet Kulit,Toko Kompetitor 871,271914,synthetic
+Aksesoris,Dompet Kulit,Toko Kompetitor 108,101957,synthetic
+Aksesoris,Dompet Kulit,Toko Kompetitor 819,192307,synthetic
+Aksesoris,Dompet Kulit,Toko Kompetitor 856,57165,synthetic
+Aksesoris,Kacamata UV,Toko Kompetitor 136,208411,synthetic
+Aksesoris,Kacamata UV,Toko Kompetitor 397,270595,synthetic
+Aksesoris,Kacamata UV,Toko Kompetitor 481,86453,synthetic
+Aksesoris,Topi Baseball,Toko Kompetitor 142,102042,synthetic
+Aksesoris,Topi Baseball,Toko Kompetitor 352,272882,synthetic
+Aksesoris,Topi Baseball,Toko Kompetitor 192,299225,synthetic
+Aksesoris,Topi Baseball,Toko Kompetitor 955,127603,synthetic
+Aksesoris,Topi Baseball,Toko Kompetitor 444,261652,synthetic

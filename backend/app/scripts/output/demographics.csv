@@ -1,0 +1,19 @@
+category,segment_name,keywords,source
+Minuman,Segmen Minuman 1,"minuman, kopi, teh, jus, susu",synthetic
+Minuman,Segmen Minuman 2,"minuman, kopi, teh, jus, susu",synthetic
+Minuman,Segmen Minuman 3,"minuman, kopi, teh, jus, susu",synthetic
+Makanan Ringan,Segmen Makanan Ringan 1,"makanan ringan, cemilan, snack, jajanan, camilan",synthetic
+Makanan Ringan,Segmen Makanan Ringan 2,"makanan ringan, cemilan, snack, jajanan, camilan",synthetic
+Makanan Ringan,Segmen Makanan Ringan 3,"makanan ringan, cemilan, snack, jajanan, camilan",synthetic
+Makanan Berat,Segmen Makanan Berat 1,"makanan berat, nasi, ayam, mie, geprek",synthetic
+Makanan Berat,Segmen Makanan Berat 2,"makanan berat, nasi, ayam, mie, geprek",synthetic
+Makanan Berat,Segmen Makanan Berat 3,"makanan berat, nasi, ayam, mie, geprek",synthetic
+Fashion,Segmen Fashion 1,"fashion, pakaian, outfit, style, mode",synthetic
+Fashion,Segmen Fashion 2,"fashion, pakaian, outfit, style, mode",synthetic
+Fashion,Segmen Fashion 3,"fashion, pakaian, outfit, style, mode",synthetic
+Aksesoris,Segmen Aksesoris 1,"aksesoris, tas, jam tangan, perhiasan, topi",synthetic
+Aksesoris,Segmen Aksesoris 2,"aksesoris, tas, jam tangan, perhiasan, topi",synthetic
+Aksesoris,Segmen Aksesoris 3,"aksesoris, tas, jam tangan, perhiasan, topi",synthetic
+Kecantikan,Segmen Kecantikan 1,"skincare, makeup, kosmetik, beauty, serum",synthetic
+Kecantikan,Segmen Kecantikan 2,"skincare, makeup, kosmetik, beauty, serum",synthetic
+Kecantikan,Segmen Kecantikan 3,"skincare, makeup, kosmetik, beauty, serum",synthetic
