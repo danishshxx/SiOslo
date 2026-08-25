@@ -1,38 +1,1077 @@
-/* Exact SiOslo HTML reference reproduction: Poppins display, Plus Jakarta Sans navigation, Inter body, Plaster wordmark, rounded pill navigation, and luminous navy/violet surfaces. */
-import { useRef, useState } from "react";
+/* .logo uses Plaster (original brand wordmark font per ideas.md and original index.html)
+   .sioslo-logo is the shared class used for sizing on each page */
+import { useRef, useState, useEffect } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
-import { Activity, ArrowUpRight, BarChart3, CheckCircle2, ChevronRight, Database, Folder, FlaskConical, Lightbulb, LineChart, Menu, Shield, Sparkles, Upload, X, Zap } from "lucide-react";
+import {
+  ArrowRight, BarChart3, CheckCircle2, ChevronRight, ChevronDown,
+  Database, FileText, Lightbulb, LineChart, Menu,
+  MessageCircle, Shield, Sparkles, Upload, User, X, Zap, AlertTriangle,
+  TrendingUp, Clock, Copy
+} from "lucide-react";
 import { Toaster, toast } from "sonner";
-import { analyzeCsv, apiConfigurationNotice, type AnalysisResponse, type InnovationBlueprintItem } from "./lib/sioslo-api";
+import {
+  analyzeCsv, apiConfigurationNotice,
+  type AnalysisResponse, type InnovationBlueprintItem
+} from "./lib/sioslo-api";
 
-type HistoryItem = { id: string; filename: string; date: string; score: number; status: string; analysis: AnalysisResponse };
-function loadHistory(): HistoryItem[] { try { return JSON.parse(localStorage.getItem("sioslo-analysis-history") || "[]") as HistoryItem[]; } catch { return []; } }
-function persistHistory(items: HistoryItem[]) { localStorage.setItem("sioslo-analysis-history", JSON.stringify(items.slice(0, 24))); }
-function saveCurrentAnalysis(item: HistoryItem) { sessionStorage.setItem("sioslo-current-analysis", JSON.stringify(item)); }
-function loadCurrentAnalysis(): HistoryItem | null { try { const raw = sessionStorage.getItem("sioslo-current-analysis"); return raw ? JSON.parse(raw) as HistoryItem : null; } catch { return null; } }
+/* ─── persistence helpers ─── */
+type HistoryItem = {
+  id: string; filename: string; date: string; rows?: number;
+  score: number; status: string; analysis: AnalysisResponse;
+};
+function loadHistory(): HistoryItem[] {
+  try { return JSON.parse(localStorage.getItem("sioslo-analysis-history") || "[]") as HistoryItem[]; }
+  catch { return []; }
+}
+function persistHistory(items: HistoryItem[]) {
+  localStorage.setItem("sioslo-analysis-history", JSON.stringify(items.slice(0, 24)));
+}
+function saveCurrentAnalysis(item: HistoryItem) {
+  sessionStorage.setItem("sioslo-current-analysis", JSON.stringify(item));
+}
+function loadCurrentAnalysis(): HistoryItem | null {
+  try { const raw = sessionStorage.getItem("sioslo-current-analysis"); return raw ? JSON.parse(raw) as HistoryItem : null; }
+  catch { return null; }
+}
 
-function Logo() { return <span className="logo">SiOSLO</span>; }
+/* ─── shared atoms ─── */
+function Logo() {
+  return <span className="sioslo-logo logo">SiOSLO</span>;
+}
 
-function LandingNav() { const [open, setOpen] = useState(false); return <nav className="nav"><div className="wrap nav-wrap"><a href="#top"><Logo /></a><ul className="nav-links"><li><a href="#product">Product</a></li><li><a href="#solutions">Solutions</a></li><li><a href="#how">How It Works</a></li><li><a href="#about">About</a></li></ul><button className="nav-toggle" onClick={() => setOpen(!open)} aria-label="Menu"><Menu /></button></div>{open && <div className="mobile-drawer open"><a href="#product" onClick={() => setOpen(false)}>Product</a><a href="#solutions" onClick={() => setOpen(false)}>Solutions</a><a href="#how" onClick={() => setOpen(false)}>How It Works</a></div>}</nav>; }
+/* ═══════════════════════════════════════════════
+   LANDING NAV
+═══════════════════════════════════════════════ */
+function LandingNav() {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-function DashboardNav() { const [open, setOpen] = useState(false); const [location] = useLocation(); const items = [{ href: "/dashboard", label: "Dashboard", icon: BarChart3 }, { href: "/dashboard#upload", label: "Upload", icon: Upload }, { href: "/health", label: "Analyze Data", icon: LineChart }, { href: "/lab", label: "Innovation Lab", icon: Sparkles }, { href: "/lab", label: "Simulation", icon: Activity }, { href: "/lab", label: "AI Buddy", icon: Sparkles }]; return <div className="topnav-outer"><div className="topnav"><Link href="/"><Logo /></Link><nav className="nav-pills">{items.map(({ href, label, icon: Icon }, index) => <Link key={label} href={href} className={`nav-pill ${(index === 0 && location === "/dashboard") || (label === "Innovation Lab" && location === "/lab") ? "active" : ""}`}><Icon />{label}</Link>)}</nav><button className="nav-toggle" onClick={() => setOpen(!open)} aria-label="Menu"><Menu /></button></div>{open && <nav className="mobile-drawer open">{items.map(({ href, label }) => <Link key={label} href={href} className="nav-pill">{label}</Link>)}</nav>}</div>; }
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handler);
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
-function HeroMock() { return <div className="hero-visual"><div className="hero-wordmark">SiOSLO</div><div className="dash-mock"><div className="dash-side"><div className="dot"><Folder /></div><div className="dot active"><BarChart3 /></div><div className="dot"><Sparkles /></div><div className="dot"><Activity /></div></div><div className="dash-main"><p className="dm-title">Data Health Dashboard</p><p className="dm-sub">monthly_sales.csv · updated 2m ago</p><div className="dm-row"><div className="dm-card"><div className="lbl">Total Rows</div><div className="val">552</div></div><div className="dm-card"><div className="lbl">Valid Rows</div><div className="val">523</div></div><div className="dm-card"><div className="lbl">Issues</div><div className="val orange">6</div></div><div className="dm-card"><div className="lbl">Ideas</div><div className="val teal">3</div></div></div><div className="dm-chart">{[34, 52, 44, 70, 58, 88, 64].map((h) => <span key={h} style={{ height: `${h}%` }} />)}</div></div></div></div>; }
+  return (
+    <nav className={`landing-nav ${scrolled ? "scrolled" : ""}`}>
+      <div className="landing-nav-inner">
+        <a href="#top"><Logo /></a>
+        <ul className="landing-nav-links">
+          <li><a href="#product"><BarChart3 size={14} />Product</a></li>
+          <li><a href="#solutions"><Sparkles size={14} />Solutions</a></li>
+          <li><a href="#how"><LineChart size={14} />How It Works</a></li>
+          <li><a href="#about"><Shield size={14} />About</a></li>
+        </ul>
+        <div className="landing-nav-right">
+          <Link href="/dashboard" className="nav-signin">Sign In</Link>
+          <Link href="/dashboard" className="nav-get-started">Get Started <ArrowRight size={14} /></Link>
+        </div>
+        <button className="nav-hamburger" onClick={() => setOpen(!open)} aria-label="Menu">
+          {open ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+      {open && (
+        <div className="landing-mobile-drawer">
+          <a href="#product" onClick={() => setOpen(false)}>Product</a>
+          <a href="#solutions" onClick={() => setOpen(false)}>Solutions</a>
+          <a href="#how" onClick={() => setOpen(false)}>How It Works</a>
+          <a href="#about" onClick={() => setOpen(false)}>About</a>
+          <Link href="/dashboard" onClick={() => setOpen(false)} className="nav-get-started" style={{ textAlign: "center" }}>
+            Get Started
+          </Link>
+        </div>
+      )}
+    </nav>
+  );
+}
 
-function FeatureCard({ icon, tone, title, kicker, body, chips }: { icon: React.ReactNode; tone: string; title: string; kicker: string; body: string; chips: string[] }) { return <div className="feature-card"><div className={`f-icon ${tone}`}>{icon}</div><h3>{title}</h3><p className="kicker">{kicker}</p><p>{body}</p><div className="chip-row">{chips.map((chip) => <span className={`chip ${tone}`} key={chip}>{chip}</span>)}</div></div>; }
+/* ═══════════════════════════════════════════════
+   DASHBOARD NAV
+═══════════════════════════════════════════════ */
+function DashboardNav() {
+  const [open, setOpen] = useState(false);
+  const [location] = useLocation();
 
-function Landing() { return <div className="landing-page" id="top"><LandingNav /><main><section className="hero"><div className="wrap hero-grid"><div><div className="eyebrow eyebrow--cyan hero-eyebrow">✦ AI-Powered Analytics for SMBs</div><h1>Turn your sales data into smarter product decisions.</h1><p className="lede">SiOSLO reads what's already happening in your business, matches it against what's happening in your market, and tells you what to make next.</p><div className="hero-ctas"><Link href="/dashboard#upload" className="pill-btn"><Upload /> Analyze Your Data</Link><a href="#how" className="pill-btn pill-btn--ghost">Run a Simulation <CheckCircle2 /></a></div></div><HeroMock /></div><div className="scroll-cue"><div className="mouse" /></div></section><section className="product" id="product"><div className="wrap"><div className="section-head"><div className="eyebrow eyebrow--violet">✦ Our Product</div><h2 className="grad">Everything you need to make better product decisions</h2><p>One workspace that reads your sales data, tracks the market around it, and turns both into a clear next move.</p></div><div className="feature-grid"><FeatureCard tone="blue" icon={<BarChart3 />} title="AI Data Analysis" kicker="Understand your data deeply" body="Upload your sales CSV and our AI instantly discovers top products, slow movers, stock issues, and patterns." chips={["Pattern Detection", "Trend Analysis", "Key Insights"]} /><FeatureCard tone="purple" icon={<Sparkles />} title="Innovation Lab" kicker="Generate winning ideas" body="Turn data and market trends into actionable product ideas, bundling opportunities, and market gaps." chips={["Product Ideas", "Bundling", "Market Trends"]} /><FeatureCard tone="teal" icon={<LineChart />} title="Simulation" kicker="Test before you decide" body="Run what-if scenarios for pricing, production, and bundles to predict outcomes and reduce business risk." chips={["Pricing Scenarios", "Demand Forecast", "Impact"]} /><FeatureCard tone="orange" icon={<Sparkles />} title="AI Buddy" kicker="Your data, answered" body="Ask anything about your data, strategies, or product ideas. Get instant, contextual answers." chips={["Q&A Assistant", "Business Insights"]} /><FeatureCard tone="blue" icon={<Shield />} title="Privacy & Local Processing" kicker="Secure. Local. Yours." body="100% local processing ensures your financial and sales data never leaves your device. No cloud. No third party." chips={["Local Processing", "No Cloud", "Full Privacy"]} /><div className="feature-card health-card"><h3>Data Health Dashboard</h3><div className="health-stats">{[["552", "Total Rows"], ["523", "Valid Rows"], ["6", "Issues"], ["3", "Ideas"]].map(([n, l]) => <div className="hs" key={l}><div className="n">{n}</div><div className="l">{l}</div></div>)}</div><p className="kicker white">Monthly Sales Trend</p><div className="mini-bars">{[30, 46, 38, 60, 50, 78].map((h) => <span key={h} style={{ height: `${h}%` }} />)}</div></div></div></div></section><section className="solutions" id="solutions"><div className="wrap"><div className="section-head"><div className="eyebrow eyebrow--violet">✦ Solutions</div><h2 className="grad">Make better product decisions</h2><p>We help product-based SMBs turn their sales data and market trends into actionable product opportunities.</p></div><div className="steps">{[["01", "Understand", "See what your sales data is telling you."], ["02", "Discover", "Find market trends and opportunities that matter."], ["03", "Decide", "Get clear AI recommendations on what to produce next."]].map(([num, title, body]) => <div className="step-card" key={num}><div className="step-num">{num}</div><h3>{title}</h3><p>{body}</p></div>)}</div><div className="signal-merge"><div className="sm-node"><span className="node-dot purple-dot" />Sales Data</div><span className="sm-arrow">+</span><div className="sm-node"><span className="node-dot cyan-dot" />Market Trends</div><span className="sm-arrow">→</span><div className="sm-node"><span className="node-dot violet-dot" />AI Recommendation</div><span className="sm-tag">ONE CLEAR NEXT MOVE</span></div></div></section><section className="how" id="how"><div className="wrap"><div className="section-head"><div className="eyebrow eyebrow--violet">✦ How It Works</div><h2>From your data to your next product</h2><p>SiOSLO connects your business signals with market context to guide the next decision.</p></div><div className="flow"><div className="flow-card"><div className="eyebrow eyebrow--violet">01 · Your Business</div><h3>Sales Data</h3><p className="fc-sub">What is happening inside your business?</p><div className="fc-row"><div className="swatch">CSV</div><div className="meta"><strong>monthly_sales.csv</strong><span>1,240 rows · 6 columns</span></div></div><div className="fc-stats"><div className="fc-stat"><div className="l">Top Seller</div><div className="v">Kemeja</div><div className="t green-text">320 sold</div></div><div className="fc-stat"><div className="l">Inventory</div><div className="v">8 units</div><div className="t orange-text">low stock</div></div></div></div><div className="flow-core"><div className="core-ring"><Sparkles /></div><h4>SiOSLO AI</h4><p>Connects the signals from both sides into one recommendation.</p></div><div className="flow-card"><div className="eyebrow eyebrow--cyan">02 · External Context</div><h3>Market Trends</h3><p className="fc-sub">What is happening outside your business?</p><div className="fc-row"><div className="swatch trend"><LineChart /></div><div className="meta"><strong>Pastel demand</strong><span>Trend Signal</span></div><strong className="green-text">+24%</strong></div><div className="chip-row"><span className="chip blue">Pastel</span><span className="chip teal">Rising Demand</span><span className="chip purple">Trend Fit</span></div></div></div><div className="signal-merge"><div className="sm-node"><span className="node-dot purple-dot" />Sales performance</div><span className="sm-arrow">+</span><div className="sm-node"><span className="node-dot cyan-dot" />Market context</div><span className="sm-arrow">→</span><div className="sm-node violet-text"><span className="node-dot violet-dot" />A clearer next product decision</div></div></div></section></main></div>; }
+  const items = [
+    { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/upload", label: "Upload", icon: Upload },
+    { href: "/health", label: "analysis data", icon: LineChart },
+    { href: "/lab", label: "Innovation lab", icon: Sparkles },
+  ];
 
-function Shell({ children }: { children: React.ReactNode }) { return <div className="dashboard-page"><DashboardNav /><main className="dash-main"><div className="wrap">{children}</div></main></div>; }
+  const isActive = (href: string, label: string) => {
+    if (href === location) return true;
+    if (label === "analysis data" && location === "/health") return true;
+    if (label === "Innovation lab" && location === "/lab") return true;
+    if (label === "Upload" && location === "/upload") return true;
+    return false;
+  };
 
-function ReportRows({ history, onOpen }: { history: HistoryItem[]; onOpen: (item: HistoryItem) => void }) { return <section className="reports-section"><div className="section-head-row"><h2>Recent Reports</h2><Link href="/dashboard#upload" className="link-add">+ New Upload</Link></div>{history.length === 0 ? <div className="report-row"><div className="report-left"><div className="report-icon"><Folder /></div><div><p className="report-title">No saved reports yet</p><p className="report-meta">Upload a CSV to create your first analysis history entry.</p></div></div></div> : history.slice(0, 4).map((item) => <button className="report-row report-button" key={item.id} onClick={() => onOpen(item)}><div className="report-left"><div className="report-icon"><Folder /></div><div><p className="report-title">{item.filename}</p><p className="report-meta">{new Date(item.date).toLocaleDateString()} · reliability score {item.score}</p></div></div><div className="report-right"><div className="score-chip"><span>Score {item.score}</span></div><div className="ideas-chip">{item.analysis.innovation_blueprint?.length || 0} ideas</div><div className="complete-chip">Complete</div><ChevronRight className="chevron" /></div></button>)}</section>; }
+  return (
+    <div className="dash-topnav-outer">
+      <div className="dash-topnav">
+        <Link href="/"><Logo /></Link>
+        <nav className="dash-nav-pills">
+          {items.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={label}
+              href={href}
+              className={`dash-nav-pill ${isActive(href, label) ? "active" : ""}`}
+            >
+              <Icon size={15} />{label}
+            </Link>
+          ))}
+        </nav>
+        <div className="dash-nav-right">
+          <button className="dash-avatar" aria-label="Profile">
+            <User size={16} />
+          </button>
+        </div>
+        <button className="nav-hamburger" onClick={() => setOpen(!open)} aria-label="Menu">
+          <Menu size={20} />
+        </button>
+      </div>
+      {open && (
+        <div className="dash-mobile-drawer">
+          {items.map(({ href, label }) => (
+            <Link key={label} href={href} className="dash-nav-pill" onClick={() => setOpen(false)}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
-function Dashboard() { const [file, setFile] = useState<File | null>(null); const [target, setTarget] = useState("Jakarta"); const [drag, setDrag] = useState(false); const [loading, setLoading] = useState(false); const [history, setHistory] = useState<HistoryItem[]>(loadHistory); const [, setLocation] = useLocation(); const inputRef = useRef<HTMLInputElement>(null); const notice = apiConfigurationNotice(); const choose = (next?: File) => { if (!next) return; if (!next.name.toLowerCase().endsWith(".csv")) return toast.error("Only .csv files are accepted"); setFile(next); }; const run = async () => { if (!file) return toast.error("Select a CSV file first"); setLoading(true); try { const analysis = await analyzeCsv(file, target); const item = { id: crypto.randomUUID(), filename: file.name, date: new Date().toISOString(), score: analysis.data_health.reliability_score, status: analysis.status, analysis }; const next = [item, ...history]; setHistory(next); persistHistory(next); saveCurrentAnalysis(item); toast.success("Analysis complete"); setLocation("/analysis"); } catch (error) { toast.error(error instanceof Error ? error.message : "Analysis failed"); } finally { setLoading(false); } }; return <Shell><div className="page-head"><div><h1>Welcome!</h1><p className="sub">Here's a summary of your data analysis activity.</p></div><div className="head-actions"><a className="btn-primary" href="#upload"><Upload /> Upload Data</a><a className="btn-ghost" href="#demo">Try Demo</a></div></div><div className="privacy-banner"><span className="dot" /><p><span>100% Local &amp; Offline —</span> Your financial data never leaves this device. No cloud, no third-party servers.</p></div><div className="stats-grid"><Stat icon={<LineChart />} label="Analyses This Month" value={`${Math.min(history.length, 3)}/3`} foot="slots used" /><Stat icon={<Database />} label="Total Rows Analyzed" value={history.length ? "—" : "0"} foot="data rows processed" /><Stat icon={<Folder />} label="Saved Reports" value={String(history.length)} foot="reports ready to view" /><Stat icon={<Lightbulb />} label="Innovation Ideas Generated" value={String(history.reduce((n, item) => n + (item.analysis.innovation_blueprint?.length || 0), 0))} foot="ideas ready to execute" /></div><ReportRows history={history} onOpen={(item) => { saveCurrentAnalysis(item); setLocation("/analysis"); }} /><section className="quick-actions" id="upload"><a className="qa-card violet" href="#csv-upload"><span className="qa-icon"><Upload /></span><span><p className="qa-title">Upload new data</p><p className="qa-sub">Start a fresh analysis</p></span><ChevronRight className="chevron" /></a><Link className="qa-card" href="/health"><span className="qa-icon"><Shield /></span><span><p className="qa-title">Check data health</p><p className="qa-sub">Review accuracy signals</p></span><ChevronRight className="chevron" /></Link><Link className="qa-card" href="/lab"><span className="qa-icon"><Sparkles /></span><span><p className="qa-title">Visit Innovation Lab</p><p className="qa-sub">Explore product ideas</p></span><ChevronRight className="chevron" /></Link></section><section className="upload-reference" id="csv-upload"><div className="upload-reference-head"><div><span className="mini-kicker">Full analysis pipeline</span><h2>Upload your sales data</h2></div>{notice && <span className="config-note">{notice}</span>}</div><label className="field-label">Target location<input value={target} onChange={(e) => setTarget(e.target.value)} /></label><div className={`reference-drop ${drag ? "dragging" : ""}`} onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); choose(e.dataTransfer.files?.[0]); }} onClick={() => inputRef.current?.click()}><input ref={inputRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => choose(e.target.files?.[0])} />{file ? <><CheckCircle2 /><strong>{file.name}</strong><span>Ready to analyze</span><button onClick={(e) => { e.stopPropagation(); setFile(null); }}><X size={16} /></button></> : <><Upload /><strong>Drop your CSV here</strong><span>or click to select · .csv only</span></>}</div><button className="btn-primary analysis-button" disabled={loading} onClick={run}>{loading ? "Analyzing…" : "Run full analysis"}<Zap size={15} /></button></section></Shell>; }
-function AnalysisPage() { const item = loadCurrentAnalysis(); return <Shell><div className="page-head"><div><span className="mini-kicker">Analysis result</span><h1>{item?.filename || "Latest analysis"}</h1><p className="sub">Your CSV has been processed through the full SiOslo pipeline.</p></div><Link className="btn-primary" href="/dashboard">Back to Dashboard <ChevronRight size={15} /></Link></div>{item ? <AnalysisResult result={item.analysis} /> : <section className="analysis-result"><h2>No analysis selected</h2><p className="sub">Return to the Dashboard and run an analysis or open a saved report.</p><Link className="btn-primary" href="/dashboard#upload">Upload CSV</Link></section>}</Shell>; }
-function Stat({ icon, label, value, foot }: { icon: React.ReactNode; label: string; value: string; foot: string }) { return <div className="stat-card"><div className="stat-icon">{icon}</div><p className="stat-label">{label}</p><p className="stat-value">{value}</p><p className="stat-foot">{foot}</p></div>; }
-function AnalysisResult({ result }: { result: AnalysisResponse }) { return <section className="analysis-result"><div className="section-head-row"><h2>Latest Analysis</h2><span className="complete-chip"><CheckCircle2 size={14} /> {result.status}</span></div><div className="result-metrics"><div><span>Reliability</span><strong>{result.data_health.reliability_score}/100</strong></div><div><span>Keyword overlap</span><strong>{Math.round((result.correlation_metrics.keyword_overlap_score || 0) * 100)}%</strong></div><div><span>Trend growth</span><strong>{result.correlation_metrics.market_trend_growth}</strong></div></div><div className="result-ideas">{result.innovation_blueprint?.map((item) => <Blueprint key={item.id} item={item} />)}</div></section>; }
-function Blueprint({ item }: { item: InnovationBlueprintItem }) { return <article className="result-idea"><Sparkles /><div><span>Innovation blueprint</span><h3>{item.title}</h3><p>{item.description || item.data_justification || "Grounded recommendation from the local model."}</p></div></article>; }
-function Health() { return <Shell><div className="page-head"><div><h1>Data Health</h1><p className="sub">Understand the accuracy of every uploaded CSV.</p></div></div><div className="health-reference"><div className="health-reference-score"><span>Reliability score</span><strong>—<small>/100</small></strong><em>Awaiting CSV analysis</em></div><div className="health-reference-copy"><h2>Accuracy before insight.</h2><p>SiOSLO checks encoding, delimiters, aliases, missing values, duplicates, dates, prices, quantities, and business outliers before the model responds.</p></div></div></Shell>; }
-function Lab() { return <Shell><div className="page-head"><div><h1>Innovation Lab</h1><p className="sub">Grounded product directions from your sales and market signals.</p></div></div><div className="lab-reference"><div><span className="mini-kicker">Active local model</span><h2>sioslo-model</h2><p>Ollama · Llama-3-8B-instruct GGUF</p><span className="model-badge"><span className="dot" /> Online</span></div><div className="lab-reference-actions"><div><Sparkles /><strong>Blueprint generation</strong><span>Active after CSV analysis</span></div><div><Activity /><strong>Simulation</strong><span>Backend endpoint not exposed</span></div><div><Zap /><strong>AI Buddy</strong><span>Backend endpoint not exposed</span></div></div></div></Shell>; }
-function App() { return <><Toaster theme="dark" position="bottom-right" /><Switch><Route path="/" component={Landing} /><Route path="/dashboard" component={Dashboard} /><Route path="/analysis" component={AnalysisPage} /><Route path="/health" component={Health} /><Route path="/lab" component={Lab} /><Route component={Landing} /></Switch></>; }
+/* ─── Dashboard shell ─── */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="dashboard-shell">
+      <DashboardNav />
+      <main className="dashboard-content">
+        <div className="dash-wrap">{children}</div>
+      </main>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   LANDING PAGE  (Image 1)
+═══════════════════════════════════════════════ */
+function Landing() {
+  return (
+    <div className="landing-page" id="top">
+      <div className="landing-bg-art" />
+      <LandingNav />
+
+      <main>
+        {/* ── Hero ── */}
+        <section className="l-hero">
+          <div className="l-hero-inner">
+            <div className="l-eyebrow-pill">AI-Powered Analytics for SMBs</div>
+            <h1 className="l-hero-wordmark">SiOSLO</h1>
+            <h2 className="l-hero-headline">AI-Powered Analytics for<br />SMBs</h2>
+            <p className="l-hero-sub">Turn Your Sales Data Into Smarter Product Decisions</p>
+
+            <div className="l-hero-ctas">
+              <Link href="/upload" className="l-cta-outline">
+                Analyze Your Data
+              </Link>
+              <a href="#how" className="l-cta-ghost">
+                How It Works
+              </a>
+            </div>
+
+            <div className="l-scroll-cue">
+              <div className="l-mouse">
+                <div className="l-mouse-dot" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Our Product ── */}
+        <section className="l-product" id="product">
+          <div className="l-section-inner">
+            <div className="l-product-eyebrow">
+              <span className="l-plus-dot">+</span> OUR PRODUCT
+            </div>
+            <h2 className="l-product-headline">
+              Everything You Need to<br />Make{" "}
+              <span className="l-gradient-text">Better Product Decisions</span>
+            </h2>
+            <p className="l-product-sub">
+              Market-Driven R&D Buddy combines AI-powered analysis with market intelligence
+              to help SMBs discover opportunities and reduce R&D guesswork.
+            </p>
+
+            <div className="l-feature-grid">
+              {[
+                { icon: <BarChart3 />, color: "blue", title: "AI Data Analysis", sub: "Understand your data deeply", body: "Upload your sales CSV and our AI instantly discovers top products, slow movers, stock issues, and patterns." },
+                { icon: <Sparkles />, color: "purple", title: "Innovation Lab", sub: "Generate winning ideas", body: "Turn data and market trends into actionable product ideas, bundling opportunities, and market gaps." },
+                { icon: <LineChart />, color: "teal", title: "Simulation", sub: "Test before you decide", body: "Run what-if scenarios for pricing, production, and bundles to predict outcomes and reduce business risk." },
+                { icon: <Sparkles />, color: "orange", title: "AI Buddy", sub: "Your data, answered", body: "Ask anything about your data, strategies, or product ideas. Get instant, contextual answers." },
+                { icon: <Shield />, color: "blue", title: "Privacy & Local Processing", sub: "Secure. Local. Yours.", body: "100% local processing ensures your financial and sales data never leaves your device. No cloud." },
+                { icon: <TrendingUp />, color: "purple", title: "Data Health Dashboard", sub: "Accuracy before insight", body: "SiOSLO checks encoding, missing values, duplicates, and business outliers before the model responds." },
+              ].map(({ icon, color, title, sub, body }) => (
+                <div className="l-feature-card" key={title}>
+                  <div className={`l-f-icon l-f-icon--${color}`}>{icon}</div>
+                  <h3>{title}</h3>
+                  <p className="l-f-sub">{sub}</p>
+                  <p className="l-f-body">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Solutions ── */}
+        <section className="l-solutions" id="solutions">
+          <div className="l-section-inner">
+            <div className="l-section-label">✦ Solutions</div>
+            <h2 className="l-section-h2 l-grad">Make better product decisions</h2>
+            <p className="l-section-p">We help product-based SMBs turn their sales data and market trends into actionable product opportunities.</p>
+            <div className="l-steps">
+              {[["01", "Understand", "See what your sales data is telling you."], ["02", "Discover", "Find market trends and opportunities that matter."], ["03", "Decide", "Get clear AI recommendations on what to produce next."]].map(([num, title, body]) => (
+                <div className="l-step-card" key={num}>
+                  <div className="l-step-num">{num}</div>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── How It Works ── */}
+        <section className="l-how" id="how">
+          <div className="l-section-inner">
+            <div className="l-section-label">✦ How It Works</div>
+            <h2 className="l-section-h2">From your data to your next product</h2>
+            <p className="l-section-p">SiOSLO connects your business signals with market context to guide the next decision.</p>
+          </div>
+        </section>
+
+        {/* ── Footer ── */}
+        <footer className="l-footer">
+          <Logo />
+          <p>© 2026 SiOSLO. AI-Powered Analytics for SMBs.</p>
+          <div className="l-footer-links">
+            <a href="#product">Product</a>
+            <a href="#solutions">Solutions</a>
+            <a href="#how">How It Works</a>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD  (Image 2)
+═══════════════════════════════════════════════ */
+function StatCard({ icon, label, value, foot }: { icon: React.ReactNode; label: string; value: string; foot: string }) {
+  return (
+    <div className="db-stat-card">
+      <div className="db-stat-icon">{icon}</div>
+      <p className="db-stat-label">{label}</p>
+      <p className="db-stat-value">{value}</p>
+      <p className="db-stat-foot">{foot}</p>
+    </div>
+  );
+}
+
+function ReportRows({ history, onOpen }: { history: HistoryItem[]; onOpen: (item: HistoryItem) => void }) {
+  return (
+    <section className="db-reports">
+      <div className="db-section-head">
+        <h2>Recent Reports</h2>
+        <Link href="/upload" className="db-new-upload">+ New Upload</Link>
+      </div>
+      {history.length === 0 ? (
+        <div className="db-report-row">
+          <div className="db-report-left">
+            <div className="db-report-icon"><FileText size={17} /></div>
+            <div>
+              <p className="db-report-title">No saved reports yet</p>
+              <p className="db-report-meta">Upload a CSV to create your first analysis.</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        history.slice(0, 4).map((item) => (
+          <button className="db-report-row db-report-btn" key={item.id} onClick={() => onOpen(item)}>
+            <div className="db-report-left">
+              <div className="db-report-icon"><FileText size={17} /></div>
+              <div>
+                <p className="db-report-title">{item.filename.replace(".csv", "").replace(/_/g, " ")}</p>
+                <p className="db-report-meta">
+                  {new Date(item.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  {item.rows ? ` · ${item.rows} rows` : ""}
+                </p>
+              </div>
+            </div>
+            <div className="db-report-right">
+              <span className="db-score-chip">Score {item.score}</span>
+              <span className="db-ideas-chip">
+                {item.analysis.innovation_blueprint?.length || 0} innovation ideas
+              </span>
+              <span className="db-complete-chip"><CheckCircle2 size={13} /> Complete</span>
+              <ChevronRight size={14} className="db-chevron" />
+            </div>
+          </button>
+        ))
+      )}
+    </section>
+  );
+}
+
+function Dashboard() {
+  const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
+  const [, setLocation] = useLocation();
+
+  const totalRows = history.reduce((n, h) => n + (h.rows || 0), 0);
+  const totalIdeas = history.reduce((n, h) => n + (h.analysis.innovation_blueprint?.length || 0), 0);
+
+  return (
+    <Shell>
+      {/* Welcome header */}
+      <div className="db-page-head">
+        <div>
+          <h1>Welcome!</h1>
+          <p className="db-page-sub">Here is a summary of your data analysis activity.</p>
+        </div>
+        <div className="db-head-actions">
+          <Link href="/upload" className="db-btn-primary"><Upload size={15} /> Upload Data</Link>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="db-stats-grid">
+        <StatCard icon={<LineChart size={17} />} label="Analyses This Month" value={`${Math.min(history.length, 3)}/3`} foot="slots used" />
+        <StatCard icon={<Database size={17} />} label="Total Rows Analyzed" value={totalRows > 0 ? String(totalRows) : "0"} foot="data rows processed" />
+        <StatCard icon={<FileText size={17} />} label="Saved Reports" value={String(history.length)} foot="reports ready to view" />
+        <StatCard icon={<Lightbulb size={17} />} label="Innovation Ideas Generated" value={String(totalIdeas)} foot="ideas ready to execute" />
+      </div>
+
+      {/* Privacy banner */}
+      <div className="db-privacy-banner">
+        <span className="db-privacy-dot" />
+        <p><span>100% Local &amp; Offline —</span> Your financial data never leaves this device. No cloud, no third-party servers.</p>
+      </div>
+
+      {/* Reports */}
+      <ReportRows
+        history={history}
+        onOpen={(item) => { saveCurrentAnalysis(item); setLocation("/health"); }}
+      />
+
+      {/* Quick actions */}
+      <div className="db-quick-grid">
+        <Link href="/upload" className="db-quick-card">
+          <div className="db-quick-icon"><Upload size={18} /></div>
+          <div>
+            <p className="db-quick-title">Upload New Data</p>
+            <p className="db-quick-sub">Start a fresh analysis with a new CSV</p>
+          </div>
+        </Link>
+        <Link href="/lab" className="db-quick-card">
+          <div className="db-quick-icon"><Sparkles size={18} /></div>
+          <div>
+            <p className="db-quick-title">View Innovation Lab</p>
+            <p className="db-quick-sub">{totalIdeas > 0 ? `${totalIdeas} innovation ideas ready to execute` : "Run an analysis to generate ideas"}</p>
+          </div>
+        </Link>
+      </div>
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   UPLOAD CSV PAGE  (Image 3)
+═══════════════════════════════════════════════ */
+function UploadPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [target, setTarget] = useState("Jakarta");
+  const [drag, setDrag] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [btnSliding, setBtnSliding] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
+  const [, setLocation] = useLocation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const notice = apiConfigurationNotice();
+
+  const choose = (next?: File | null) => {
+    if (!next) return;
+    if (!next.name.toLowerCase().endsWith(".csv")) return toast.error("Only .csv files are accepted");
+    setFile(next);
+  };
+
+  const run = async () => {
+    if (!file) return toast.error("Select a CSV file first");
+    setBtnSliding(true);
+    await new Promise(r => setTimeout(r, 600));
+    setLoading(true);
+    try {
+      const analysis = await analyzeCsv(file, target);
+      const item: HistoryItem = {
+        id: crypto.randomUUID(),
+        filename: file.name,
+        date: new Date().toISOString(),
+        rows: 342, // placeholder; real API would return this
+        score: analysis.data_health.reliability_score,
+        status: analysis.status,
+        analysis,
+      };
+      const next = [item, ...history];
+      setHistory(next);
+      persistHistory(next);
+      saveCurrentAnalysis(item);
+      toast.success("Analysis complete");
+      setLocation("/health");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Analysis failed");
+      setBtnSliding(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const REQUIRED_COLS = ["date", "product_name", "category", "qty_sold", "sell_price", "cogs", "sales_channel", "region", "closing_stock"];
+
+  return (
+    <Shell>
+      {/* Header */}
+      <div className="up-header">
+        <h1 className="up-headline">Upload Your Sales Data</h1>
+        <h2 className="up-headline-accent">&amp; Get Insights</h2>
+        <p className="up-sub">
+          Our AI analyzes your historical data + local market trends to generate targeted product innovation recommendations.
+        </p>
+        <div className="up-privacy-badge">
+          <Shield size={18} className="up-shield" />
+          <div>
+            <p className="up-privacy-title">100% Local &amp; Offline</p>
+            <p className="up-privacy-sub">Your financial data never leaves this device — no cloud, no third-party servers.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main upload card */}
+      <div className="up-card">
+        {notice && <div className="up-notice">{notice}</div>}
+
+        <label className="up-target-label">
+          Target location
+          <input
+            className="up-target-input"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            placeholder="e.g. Jakarta"
+          />
+        </label>
+
+        {/* Drop zone */}
+        <div
+          className={`up-dropzone ${drag ? "dragging" : ""} ${file ? "has-file" : ""}`}
+          onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => { e.preventDefault(); setDrag(false); choose(e.dataTransfer.files?.[0]); }}
+          onClick={() => !file && inputRef.current?.click()}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv,text/csv"
+            hidden
+            onChange={(e) => choose(e.target.files?.[0])}
+          />
+          {file ? (
+            <div className="up-file-selected">
+              <CheckCircle2 size={36} className="up-check" />
+              <strong>{file.name}</strong>
+              <span>Ready to analyze</span>
+              <button
+                className="up-remove-file"
+                onClick={(e) => { e.stopPropagation(); setFile(null); }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="up-dropzone-idle">
+              <Upload size={36} className="up-upload-icon" />
+              <strong>Drag your CSV file here</strong>
+              <span className="up-click-hint">— click to select a file</span>
+              <div className="up-only-csv">
+                <FileText size={12} /> Only .csv files accepted
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Required columns */}
+        <div className="up-required-cols">
+          <p className="up-req-label">REQUIRED COLUMNS</p>
+          <div className="up-cols-row">
+            {REQUIRED_COLS.map((col) => (
+              <span key={col} className="up-col-chip">{col}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Analyze button with slide animation */}
+        {file && (
+          <div className="up-analyze-wrap">
+            <button
+              className={`up-analyze-btn ${btnSliding ? "sliding" : ""}`}
+              disabled={loading}
+              onClick={run}
+            >
+              {loading ? (
+                <><span className="up-spinner" /> Analyzing…</>
+              ) : (
+                <><Zap size={16} /> Analyze Data <ArrowRight size={16} className="up-btn-arrow" /></>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Feature pills */}
+      <div className="up-features-row">
+        <div className="up-feature-pill">
+          <Shield size={20} className="up-fp-icon green" />
+          <div>
+            <p className="up-fp-title">100% Private</p>
+            <p className="up-fp-sub">No data leaves your device</p>
+          </div>
+        </div>
+        <div className="up-feature-pill">
+          <Clock size={20} className="up-fp-icon blue" />
+          <div>
+            <p className="up-fp-title">Fast Results</p>
+            <p className="up-fp-sub">Analysis in under 60 seconds</p>
+          </div>
+        </div>
+        <div className="up-feature-pill">
+          <Sparkles size={20} className="up-fp-icon purple" />
+          <div>
+            <p className="up-fp-title">AI-Powered</p>
+            <p className="up-fp-sub">Llama-3 8B local model</p>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   DATA HEALTH DASHBOARD  (Image 4)
+═══════════════════════════════════════════════ */
+function CircleGauge({ score }: { score: number }) {
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+  const isGood = score >= 80;
+  const isMid = score >= 60;
+
+  return (
+    <div className="dh-gauge-wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(139,92,246,0.15)" strokeWidth="12" />
+        <circle
+          cx="70" cy="70" r={r} fill="none"
+          stroke={isGood ? "#39D5B0" : isMid ? "#A45BFF" : "#FF7089"}
+          strokeWidth="12"
+          strokeDasharray={`${dash} ${circ - dash}`}
+          strokeDashoffset={circ * 0.25}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dasharray 1s ease" }}
+        />
+        <text x="70" y="62" textAnchor="middle" fill="#fff" fontSize="28" fontWeight="700">{score}</text>
+        <text x="70" y="80" textAnchor="middle" fill="#8B82A0" fontSize="13">/100</text>
+      </svg>
+      <div className={`dh-gauge-badge ${isGood ? "good" : isMid ? "mid" : "bad"}`}>
+        {isGood ? <><CheckCircle2 size={12} /> Good</> : isMid ? <><AlertTriangle size={12} /> Needs Attention</> : <><AlertTriangle size={12} /> Low Quality</>}
+      </div>
+    </div>
+  );
+}
+
+function Health() {
+  const item = loadCurrentAnalysis();
+  const [, setLocation] = useLocation();
+
+  const health = item?.analysis?.data_health;
+  const corr = item?.analysis?.correlation_metrics as any;
+  const score = health?.reliability_score ?? 0;
+  const issues = health?.issues ?? [];
+  const breakdown: any = health?.score_breakdown ?? {};
+
+  // REQUIRED_COLS from csv_parser.py (source of truth)
+  const REQUIRED_COLS = [
+    "transaction_date", "product_name", "category",
+    "qty_sold", "remaining_stock", "unit_price",
+  ];
+
+  // Count issues per column
+  const issuesByCol: Record<string, number> = {};
+  issues.forEach((iss) => {
+    if (!iss.column) return;
+    issuesByCol[iss.column] = (issuesByCol[iss.column] ?? 0) + 1;
+  });
+
+  const allColNames = Array.from(new Set([
+    ...REQUIRED_COLS,
+    ...Object.keys(issuesByCol),
+  ]));
+
+  const colRows = allColNames.map((col) => ({
+    name: col,
+    ok: !issuesByCol[col],
+    issueCount: issuesByCol[col] ?? 0,
+  }));
+
+  const okCount = colRows.filter((c) => c.ok).length;
+  const missingCount = issues.filter((i) => i.issue_type === "missing_value" || i.issue_type === "bad_numeric" || i.issue_type === "bad_date").length;
+  const duplicateCount = issues.filter((i) => i.issue_type === "duplicate").length;
+  const outlierCount = issues.filter((i) => i.issue_type === "outlier").length;
+
+  if (!item || !health) {
+    return (
+      <Shell>
+        <div className="lab-empty" style={{ margin: "48px auto", maxWidth: 480 }}>
+          <Sparkles size={40} className="lab-empty-icon" />
+          <h2>No analysis yet</h2>
+          <p>Upload your CSV and run an analysis to see real data health metrics here.</p>
+          <Link href="/upload" className="db-btn-primary" style={{ marginTop: 16 }}>
+            <Upload size={15} /> Upload CSV to Start
+          </Link>
+        </div>
+      </Shell>
+    );
+  }
+
+  return (
+    <Shell>
+      <div className="dh-header">
+        <div>
+          <h1 className="dh-title">Data Health Dashboard</h1>
+          <p className="dh-sub">
+            Quality report for{" "}
+            <span className="dh-file-link">{item.filename}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Score + metrics row */}
+      <div className="dh-score-row">
+        <div className="dh-score-card">
+          <p className="dh-score-label">RELIABILITY SCORE</p>
+          <CircleGauge score={score} />
+          <p className="dh-score-caption">{health.warning_message}</p>
+        </div>
+
+        <div className="dh-metrics-grid">
+          <div className="dh-metric-card">
+            <div className="dh-metric-top">
+              <AlertTriangle size={18} className="dh-m-icon orange" />
+              <span className="dh-m-label">Total Issues</span>
+            </div>
+            <p className="dh-m-value">{issues.length}</p>
+            <p className="dh-m-foot">rows flagged</p>
+          </div>
+          <div className="dh-metric-card">
+            <div className="dh-metric-top">
+              <Database size={18} className="dh-m-icon blue" />
+              <span className="dh-m-label">Missing / Bad</span>
+            </div>
+            <p className="dh-m-value">{missingCount}</p>
+            <p className="dh-m-foot">format issues</p>
+          </div>
+          <div className="dh-metric-card">
+            <div className="dh-metric-top">
+              <FileText size={18} className="dh-m-icon purple" />
+              <span className="dh-m-label">Duplicates</span>
+            </div>
+            <p className="dh-m-value">{duplicateCount}</p>
+            <p className="dh-m-foot">rows removed</p>
+          </div>
+          <div className="dh-metric-card">
+            <div className="dh-metric-top">
+              <TrendingUp size={18} className="dh-m-icon green" />
+              <span className="dh-m-label">Outliers</span>
+            </div>
+            <p className="dh-m-value">{outlierCount}</p>
+            <p className="dh-m-foot">business anomalies</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Score breakdown — transparent formula */}
+      {breakdown.final_score !== undefined && (
+        <div className="dh-section">
+          <div className="dh-section-head">
+            <h2>Score Breakdown</h2>
+            <span className="dh-cols-count">Open formula — base 100 minus penalties</span>
+          </div>
+          <div className="dh-transparency-grid">
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><AlertTriangle size={14} /><span>FORMAT PENALTY</span></div>
+              <p className="dh-trans-value">−{breakdown.format_issue_penalty ?? 0}</p>
+            </div>
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><FileText size={14} /><span>DUPLICATE PENALTY</span></div>
+              <p className="dh-trans-value">−{breakdown.duplicate_penalty ?? 0}</p>
+            </div>
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><TrendingUp size={14} /><span>OUTLIER PENALTY</span></div>
+              <p className="dh-trans-value">−{breakdown.outlier_penalty ?? 0}</p>
+            </div>
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><CheckCircle2 size={14} /><span>FINAL SCORE</span></div>
+              <p className="dh-trans-value">{score}/100</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Column status — from real issues */}
+      <div className="dh-section">
+        <div className="dh-section-head">
+          <h2>CSV Column Status</h2>
+          <span className="dh-cols-count">{okCount}/{allColNames.length} columns complete</span>
+        </div>
+        <div className="dh-col-list">
+          {colRows.map(({ name, ok, issueCount }) => (
+            <div className="dh-col-row" key={name}>
+              <span className={`dh-col-dot ${ok ? "ok" : "warn"}`}>
+                {ok ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+              </span>
+              <span className={`dh-col-name ${!ok ? "warn-text" : ""}`}>{name}</span>
+              <span className={`dh-col-status ${ok ? "complete" : "issue"}`}>
+                {ok ? "Complete" : `${issueCount} issue${issueCount > 1 ? "s" : ""}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Correlation metrics from real API */}
+      {corr && (
+        <div className="dh-section">
+          <div className="dh-section-head">
+            <h2>AI Transparency</h2>
+            <span className="dh-black-box-tag">Not a black box</span>
+          </div>
+          <div className="dh-transparency-grid">
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><TrendingUp size={14} /><span>KEYWORD OVERLAP</span></div>
+              <p className="dh-trans-value">{Math.round((corr.keyword_overlap_score ?? 0) * 100)}%</p>
+            </div>
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><Sparkles size={14} /><span>MARKET TREND GROWTH</span></div>
+              <p className="dh-trans-value">{corr.market_trend_growth}</p>
+            </div>
+            {corr.trend_reference_source && (
+              <div className="dh-trans-card">
+                <div className="dh-trans-top"><Database size={14} /><span>TREND SOURCE</span></div>
+                <p className="dh-trans-value">{corr.trend_reference_source}</p>
+              </div>
+            )}
+            <div className="dh-trans-card">
+              <div className="dh-trans-top"><Zap size={14} /><span>AI MODEL</span></div>
+              <p className="dh-trans-value">sioslo-model (Local)</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CTA */}
+      <div className="dh-cta-row">
+        <button className="dh-continue-btn" onClick={() => setLocation("/lab")}>
+          Continue to Innovation Blueprint <ArrowRight size={16} />
+        </button>
+      </div>
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   INNOVATION BLUEPRINT / LAB  (Image 5)
+═══════════════════════════════════════════════ */
+function BlueprintCard({
+  num, category, match, product, uplift, ourPrice, compPrice,
+  keyNumbers, whyFits, riskNote,
+}: {
+  num: number; category: string; match: number; product: string; uplift: string;
+  ourPrice: string; compPrice: string;
+  keyNumbers: { label: string; value: string }[];
+  whyFits: string; riskNote: string;
+}) {
+  const [riskOpen, setRiskOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyText = `${product} — ${whyFits}\n\nOur Price: ${ourPrice} vs Competitor: ${compPrice}`;
+  const handleCopy = async () => {
+    try { await navigator.clipboard.writeText(copyText); }
+    catch { /* fallback */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied for WhatsApp!");
+  };
+
+  return (
+    <div className="bp-card">
+      <div className="bp-card-top">
+        <div className="bp-num-badge">{num}</div>
+        <span className="bp-category">{category}</span>
+        <span className="bp-match">Match {match}%</span>
+      </div>
+      <div className="bp-product-row">
+        <span className="bp-product-name">{product}</span>
+        <span className="bp-uplift">{uplift}</span>
+      </div>
+
+      <div className="bp-price-section">
+        <p className="bp-section-label">Price Comparison</p>
+        <div className="bp-price-row">
+          <div className="bp-price-col our">
+            <span className="bp-price-tag">OUR RECOMMENDATION</span>
+            <strong className="bp-price-val">{ourPrice}</strong>
+          </div>
+          <span className="bp-vs">vs</span>
+          <div className="bp-price-col comp">
+            <span className="bp-price-tag">COMPETITOR CEILING</span>
+            <strong className="bp-price-val comp-val">{compPrice}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="bp-key-numbers">
+        <p className="bp-section-label">Key Number</p>
+        {keyNumbers.map(({ label, value }) => (
+          <div className="bp-kn-row" key={label}>
+            <span className="bp-kn-dot">•</span>
+            <span className="bp-kn-label">{label}</span>
+            <span className="bp-kn-value">{value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="bp-why-fits">
+        <p className="bp-section-label">WHY THIS IDEA FITS</p>
+        <p className="bp-why-body">{whyFits}</p>
+      </div>
+
+      <button className="bp-risk-toggle" onClick={() => setRiskOpen(!riskOpen)}>
+        <AlertTriangle size={13} /> Business Risk Mitigation
+        <ChevronDown size={14} style={{ transform: riskOpen ? "rotate(180deg)" : "", transition: ".2s" }} />
+      </button>
+      {riskOpen && (
+        <div className="bp-risk-body">
+          <p>{riskNote}</p>
+        </div>
+      )}
+
+      <button className="bp-whatsapp-btn" onClick={handleCopy}>
+        <MessageCircle size={16} /> {copied ? "Copied!" : "Copy for WhatsApp"} <Copy size={14} />
+      </button>
+    </div>
+  );
+}
+
+/* Real blueprint card — uses all fields from real API response */
+function RealBlueprintCard({ num, item }: { num: number; item: InnovationBlueprintItem }) {
+  const [copied, setCopied] = useState(false);
+  const [riskOpen, setRiskOpen] = useState(false);
+
+  const fmt = (n: number) =>
+    "Rp " + n.toLocaleString("id-ID");
+
+  const handleCopy = async () => {
+    try { await navigator.clipboard.writeText(item.whatsapp_copy_text); } catch { /* fallback */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied for WhatsApp!");
+  };
+
+  return (
+    <div className="bp-card">
+      {/* Header */}
+      <div className="bp-card-top">
+        <div className="bp-num-badge">{num}</div>
+        <span className="bp-category">Innovation Blueprint</span>
+        <span className="bp-match">{item.target_location}</span>
+      </div>
+
+      {/* Title */}
+      <div className="bp-product-row">
+        <span className="bp-product-name">{item.title}</span>
+      </div>
+
+      {/* Price comparison — from real recommended_price + competitor_price_ceiling */}
+      <div className="bp-price-section">
+        <p className="bp-section-label">Price Comparison</p>
+        <div className="bp-price-row">
+          <div className="bp-price-col our">
+            <span className="bp-price-tag">OUR RECOMMENDATION</span>
+            <strong className="bp-price-val">{fmt(item.recommended_price)}</strong>
+          </div>
+          <span className="bp-vs">vs</span>
+          <div className="bp-price-col comp">
+            <span className="bp-price-tag">COMPETITOR CEILING</span>
+            <strong className="bp-price-val comp-val">{fmt(item.competitor_price_ceiling)}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Justification */}
+      <div className="bp-why-fits">
+        <p className="bp-section-label">WHY THIS IDEA FITS</p>
+        <p className="bp-why-body">{item.justification}</p>
+      </div>
+
+      {/* Risk factors — collapsible */}
+      {item.risk_factors?.length > 0 && (
+        <>
+          <button className="bp-risk-toggle" onClick={() => setRiskOpen(!riskOpen)}>
+            <AlertTriangle size={13} /> Business Risk Factors
+            <ChevronDown size={14} style={{ transform: riskOpen ? "rotate(180deg)" : "", transition: ".2s" }} />
+          </button>
+          {riskOpen && (
+            <div className="bp-risk-body">
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {item.risk_factors.map((r, i) => <li key={i}>{r}</li>)}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* WhatsApp copy — uses pre-written text from backend */}
+      <button className="bp-whatsapp-btn" onClick={handleCopy}>
+        <MessageCircle size={16} /> {copied ? "Copied!" : "Copy for WhatsApp"} <Copy size={14} />
+      </button>
+    </div>
+  );
+}
+
+
+function Lab() {
+  const item = loadCurrentAnalysis();
+  const blueprints: InnovationBlueprintItem[] = item?.analysis?.innovation_blueprint || [];
+
+  return (
+    <Shell>
+      <div className="lab-page">
+        {/* Header */}
+        <div className="lab-header">
+          <div className="lab-model-badge">
+            <Sparkles size={13} /> Innovation Lab — sioslo-model · Local AI
+          </div>
+          <h1 className="lab-title">Your Product Innovation Blueprint</h1>
+          <p className="lab-sub">
+            {item
+              ? <>Ideas based on <em>{item.filename}</em> — click <em>'Copy for WhatsApp'</em> to promote right away!</>
+              : "Upload a CSV and run an analysis to generate your innovation blueprint."}
+          </p>
+        </div>
+
+        {/* Blueprint cards — real data from API */}
+        {blueprints.length > 0 ? (
+          <div className="lab-cards-grid">
+            {blueprints.map((bp, i) => (
+              <RealBlueprintCard key={bp.id} num={i + 1} item={bp} />
+            ))}
+          </div>
+        ) : (
+          <div className="lab-empty">
+            <Sparkles size={40} className="lab-empty-icon" />
+            <h2>No blueprint yet</h2>
+            <p>Upload your sales CSV and run a full analysis to see AI-generated product innovation ideas here.</p>
+            <Link href="/upload" className="db-btn-primary" style={{ marginTop: 16 }}>
+              <Upload size={15} /> Upload CSV to Start
+            </Link>
+          </div>
+        )}
+      </div>
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   ANALYSIS RESULT PAGE
+═══════════════════════════════════════════════ */
+function AnalysisPage() {
+  const item = loadCurrentAnalysis();
+  return (
+    <Shell>
+      <div className="db-page-head">
+        <div>
+          <span className="db-mini-kicker">Analysis result</span>
+          <h1>{item?.filename || "Latest analysis"}</h1>
+          <p className="db-page-sub">Your CSV has been processed through the full SiOslo pipeline.</p>
+        </div>
+        <Link className="db-btn-primary" href="/dashboard">
+          Back to Dashboard <ChevronRight size={15} />
+        </Link>
+      </div>
+      {item ? (
+        <section className="analysis-result-section">
+          <div className="db-section-head" style={{ marginBottom: 14 }}>
+            <h2>Latest Analysis</h2>
+            <span className="db-complete-chip"><CheckCircle2 size={14} /> {item.analysis.status}</span>
+          </div>
+          <div className="ar-metrics">
+            <div><span>Reliability</span><strong>{item.analysis.data_health.reliability_score}/100</strong></div>
+            <div><span>Keyword overlap</span><strong>{Math.round((item.analysis.correlation_metrics.keyword_overlap_score || 0) * 100)}%</strong></div>
+            <div><span>Trend growth</span><strong>{item.analysis.correlation_metrics.market_trend_growth}</strong></div>
+          </div>
+          <div className="ar-ideas">
+            {item.analysis.innovation_blueprint?.map((bp) => (
+              <article className="ar-idea" key={bp.id}>
+                <Sparkles size={18} />
+                <div>
+                  <span>Innovation blueprint</span>
+                  <h3>{bp.title}</h3>
+                  <p>{bp.description || bp.data_justification || "Grounded recommendation from the local model."}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="analysis-result-section">
+          <h2>No analysis selected</h2>
+          <p className="db-page-sub">Return to the Dashboard and run an analysis or open a saved report.</p>
+          <Link className="db-btn-primary" href="/upload">Upload CSV</Link>
+        </section>
+      )}
+    </Shell>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   APP ROUTER
+═══════════════════════════════════════════════ */
+function App() {
+  return (
+    <>
+      <Toaster theme="dark" position="bottom-right" />
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/upload" component={UploadPage} />
+        <Route path="/health" component={Health} />
+        <Route path="/lab" component={Lab} />
+        <Route path="/analysis" component={AnalysisPage} />
+        <Route component={Landing} />
+      </Switch>
+    </>
+  );
+}
+
 export default App;
