@@ -1,5 +1,4 @@
-/* .logo uses Plaster (original brand wordmark font per ideas.md and original index.html)
-   .sioslo-logo is the shared class used for sizing on each page */
+/* SiOslo frontend — single-file React app using wouter routing and custom CSS design system. */
 import { useRef, useState, useEffect } from "react";
 import { Link, Route, Switch, useLocation } from "wouter";
 import {
@@ -15,7 +14,8 @@ import {
 } from "./lib/sioslo-api";
 
 
-/* ─── persistence helpers ─── */
+/* Local storage helpers for analysis history and current session. */
+
 type HistoryItem = {
   id: string; filename: string; date: string; rows?: number;
   score: number; status: string; analysis: AnalysisResponse;
@@ -35,7 +35,8 @@ function loadCurrentAnalysis(): HistoryItem | null {
   catch { return null; }
 }
 
-/* ─── shared atoms ─── */
+/* Shared brand wordmark component. */
+
 function Logo() {
   return <span className="sioslo-logo logo">SiOSLO</span>;
 }

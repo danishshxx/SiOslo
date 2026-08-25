@@ -1,27 +1,4 @@
-"""
-csv_parser.py
-=================================================================
-Modul Data Ingestion & Guardrails untuk Market-Driven R&D Buddy.
-Tanggung jawab: Jay (Data Ingestion & Guardrails Specialist)
-
-Tugas modul ini HANYA dua hal (sengaja dibatasi, sesuai aturan MVP
-"sinkron, tanpa background job"):
-    1. Membaca & membersihkan CSV penjualan yang diunggah user.
-    2. Menghitung `data_reliability_score` (0-100) secara DETERMINISTIK
-       dan TRANSPARAN (ada breakdown, bukan angka ajaib).
-
-Modul ini TIDAK memanggil FastAPI, TIDAK memanggil database, dan TIDAK
-memanggil LLM. Fungsi inti `parse_and_validate()` murni Python biasa ->
-bisa di-unit-test sendiri tanpa perlu jalankan seluruh stack Docker.
-
-Tiga fungsi publik, tiga konsumen berbeda:
-    - parse_and_validate(source) -> dict
-      Engine inti. Dipakai internal oleh dua wrapper di bawah.
-    - parse_sales_csv(content: bytes, filename: str) -> dict
-      Dipakai app/api/v1/endpoints/sales.py (endpoint /sales/upload).
-    - parse_and_validate_csv(filepath_or_bytes) -> tuple[DataFrame, int, list[str]]
-      Dipakai app/api/v1/endpoints/analyze.py (endpoint /analyze/).
-"""
+"""CSV ingestion and data quality scoring module for the SiOslo analysis pipeline."""
 
 from __future__ import annotations
 

@@ -7,18 +7,10 @@ from app.schemas.insight import InsightResponse
 from app.core.config import settings
 
 
-# ═══════════════════════════════════════════════════════════════════
-# FUNGSI UTAMA – dipanggil oleh endpoint /analyze
-# ═══════════════════════════════════════════════════════════════════
+# Entry point called by the /analyze endpoint.
 
 def _sanitize_price_ceiling(item):
-    """Perbaiki competitor_price_ceiling yang tidak wajar TANPA membuang
-    seluruh item. Ditemukan lewat testing: model konsisten (6 dari 6 kasus
-    di 3 percobaan nyata) menghasilkan ceiling 4-14x lipat dari
-    recommended_price untuk skenario 'belum ada kecocokan tren' -- padahal
-    teks justifikasi & whatsapp_copy_text-nya sendiri sudah benar dan
-    spesifik. Menolak seluruh item karena 1 angka yang meleset itu boros --
-    cukup angkanya saja yang dikoreksi ke rentang wajar (maks 1.3x)."""
+    """Clamp competitor_price_ceiling to max 1.3x recommended_price if the model returns an implausible value."""
     price = item.get("recommended_price")
     ceiling = item.get("competitor_price_ceiling")
     if price and price > 0:
